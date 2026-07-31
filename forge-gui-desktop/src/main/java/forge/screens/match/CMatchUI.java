@@ -1319,6 +1319,13 @@ public final class CMatchUI
     }
 
     @Override
+    public <T> List<T> getChoices(final String message, final int min, final int max, final List<T> choices,
+            final List<T> selected, final FSerializableFunction<T, String> display,
+            final java.util.function.Function<T, Iterable<String>> searchKeyProvider) {
+        return GuiChoose.getChoices(message, min, max, choices, selected, display, searchKeyProvider, this);
+    }
+
+    @Override
     public <T> OrderResult<T> order(final String title, final String top, final int remainingObjectsMin, final int remainingObjectsMax,
             final List<T> sourceChoices, final List<T> destChoices, final CardView referenceCard, final boolean sideboardingMode, final boolean showRememberCheckbox) {
         return GuiChoose.order(title, top, remainingObjectsMin, remainingObjectsMax, sourceChoices, destChoices, referenceCard, sideboardingMode, showRememberCheckbox, this);

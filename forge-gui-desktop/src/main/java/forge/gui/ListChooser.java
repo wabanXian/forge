@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 
 import javax.swing.AbstractListModel;
@@ -93,6 +94,7 @@ public class ListChooser<T> {
     private List<T> displayedItems;
     private final int minChoices, maxChoices;
     private final Function<T, String> display;
+    private final Function<T, Iterable<String>> searchKeyProvider;
 
     // Flag: was the dialog already shown?
     private boolean called;
@@ -103,10 +105,16 @@ public class ListChooser<T> {
     private final ChooserListModel listModel;
 
     public ListChooser(final String title, final int minChoices, final int maxChoices, final Collection<T> list, final Function<T, String> display) {
+        this(title, minChoices, maxChoices, list, display, null);
+    }
+
+    public ListChooser(final String title, final int minChoices, final int maxChoices, final Collection<T> list,
+            final Function<T, String> display, final Function<T, Iterable<String>> searchKeyProvider) {
         FThreads.assertExecutedByEdt(true);
         this.minChoices = minChoices;
         this.maxChoices = maxChoices;
         this.display = display;
+        this.searchKeyProvider = searchKeyProvider;
         this.allItems = list.getClass().isInstance(List.class) ? (List<T>)list : Lists.newArrayList(list);
         this.displayedItems = new ArrayList<>(this.allItems);
         this.listModel = new ChooserListModel();
@@ -203,10 +211,10 @@ public class ListChooser<T> {
             final List<T> startsWith = new ArrayList<>();
             final List<T> contains = new ArrayList<>();
             for (final T item : allItems) {
-                final String name = normalize(getDisplayText(item));
-                if (name.startsWith(text)) {
+                final SearchMatch match = getSearchMatch(item, text);
+                if (match == SearchMatch.STARTS_WITH) {
                     startsWith.add(item);
-                } else if (name.contains(text)) {
+                } else if (match == SearchMatch.CONTAINS) {
                     contains.add(item);
                 }
             }
@@ -223,7 +231,40 @@ public class ListChooser<T> {
     }
 
     private static String normalize(final String s) {
-        return StringUtils.stripAccents(s.toLowerCase()).replaceAll("[^a-z0-9 ]", "");
+        if (s == null) {
+            return "";
+        }
+        return StringUtils.stripAccents(s.toLowerCase(Locale.ROOT)).replaceAll("[^\\p{L}\\p{N} ]", "").trim();
+    }
+
+    private SearchMatch getSearchMatch(final T value, final String searchText) {
+        boolean contains = false;
+        for (final String searchKey : getSearchTexts(value)) {
+            final String normalizedKey = normalize(searchKey);
+            if (normalizedKey.startsWith(searchText)) {
+                return SearchMatch.STARTS_WITH;
+            }
+            if (normalizedKey.contains(searchText)) {
+                contains = true;
+            }
+        }
+        return contains ? SearchMatch.CONTAINS : SearchMatch.NONE;
+    }
+
+    private List<String> getSearchTexts(final T value) {
+        final List<String> keys = new ArrayList<>();
+        keys.add(getDisplayText(value));
+        if (searchKeyProvider != null) {
+            final Iterable<String> extraKeys = searchKeyProvider.apply(value);
+            if (extraKeys != null) {
+                for (final String key : extraKeys) {
+                    if (key != null) {
+                        keys.add(key);
+                    }
+                }
+            }
+        }
+        return keys;
     }
 
     private String getDisplayText(final T value) {
@@ -234,6 +275,12 @@ public class ListChooser<T> {
             return t.getTranslatedName();
         }
         return value != null ? value.toString() : "";
+    }
+
+    private enum SearchMatch {
+        NONE,
+        CONTAINS,
+        STARTS_WITH
     }
 
     /**

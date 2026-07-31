@@ -2061,15 +2061,19 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
                 .map(CardFaceView::new)
                 .sorted()
                 .collect(Collectors.toList());
-        CardFaceView cardFaceView = getGui().one(message, choices);
+        CardFaceView cardFaceView = getGui().one(message, choices, null, PlayerControllerHuman::getCardFaceSearchKeys);
         return StaticData.instance().getCommonCards().getFaceByName(cardFaceView.getName());
     }
 
     @Override
     public ICardFace chooseSingleCardFace(SpellAbility sa, List<ICardFace> faces, String message) {
         Map<CardFaceView, ICardFace> mapped = faces.stream().collect(Collectors.toMap(CardFaceView::new, Function.identity(), (a, b) -> a, TreeMap::new));
-        CardFaceView chosen = getGui().one(message, Lists.newArrayList(mapped.keySet()));
+        CardFaceView chosen = getGui().one(message, Lists.newArrayList(mapped.keySet()), null, PlayerControllerHuman::getCardFaceSearchKeys);
         return mapped.get(chosen);
+    }
+
+    private static Iterable<String> getCardFaceSearchKeys(final CardFaceView cardFaceView) {
+        return Arrays.asList(cardFaceView.getName(), cardFaceView.getTranslatedName());
     }
 
     @Override
@@ -3380,7 +3384,9 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
             } else {
                 List<CardFaceView> choices = carddb.streamAllFaces().map(CardFaceView::new).collect(Collectors.toList());
                 Collections.sort(choices);
-                f = getGui().oneOrNone(localizer.getMessage("lblNameTheCard"), choices);
+                List<CardFaceView> selected = getGui().getChoices(localizer.getMessage("lblNameTheCard"),
+                        0, 1, choices, null, null, PlayerControllerHuman::getCardFaceSearchKeys);
+                f = selected.isEmpty() ? null : selected.get(0);
                 if (f != null) {
                     Integer qty = getGui().getInteger(localizer.getMessage("lblHowMany"), 1, 99, 10);
                     quantity = qty != null ? qty : 1;

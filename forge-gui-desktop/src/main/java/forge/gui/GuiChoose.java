@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
+import java.util.function.Function;
 
 import javax.swing.JList;
 import javax.swing.WindowConstants;
@@ -140,6 +141,11 @@ public class GuiChoose {
         return getChoices(message, min, max, choices, selected, display, null);
     }
     public static <T> List<T> getChoices(final String message, final int min, final int max, final Collection<T> choices, final Collection<T> selected, final FSerializableFunction<T, String> display, final CMatchUI matchUI) {
+        return getChoices(message, min, max, choices, selected, display, null, matchUI);
+    }
+    public static <T> List<T> getChoices(final String message, final int min, final int max, final Collection<T> choices,
+            final Collection<T> selected, final FSerializableFunction<T, String> display,
+            final Function<T, Iterable<String>> searchKeyProvider, final CMatchUI matchUI) {
         if (choices == null || choices.isEmpty()) {
             if (min == 0) {
                 return new ArrayList<>();
@@ -148,7 +154,7 @@ public class GuiChoose {
         }
 
         final Callable<List<T>> showChoice = () -> {
-            final ListChooser<T> c = new ListChooser<>(message, min, max, choices, display);
+            final ListChooser<T> c = new ListChooser<>(message, min, max, choices, display, searchKeyProvider);
             final JList<T> list = c.getLstChoices();
             if (matchUI != null) {
                 list.addListSelectionListener(ev -> {

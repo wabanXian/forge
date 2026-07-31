@@ -36,6 +36,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 public interface IGuiGame {
     record OrderResult<T>(List<T> ordered, boolean rememberDecision) implements Serializable {}
@@ -183,6 +184,11 @@ public interface IGuiGame {
         return getChoices(message, min, max, choices, null, null);
     }
     <T> List<T> getChoices(String message, int min, int max, List<T> choices, List<T> selected, FSerializableFunction<T, String> display);
+    default <T> List<T> getChoices(final String message, final int min, final int max, final List<T> choices,
+            final List<T> selected, final FSerializableFunction<T, String> display,
+            final Function<T, Iterable<String>> searchKeyProvider) {
+        return getChoices(message, min, max, choices, selected, display);
+    }
 
     // Get Integer in range
     Integer getInteger(String message, int min, int max, boolean sortDesc);
@@ -214,6 +220,18 @@ public interface IGuiGame {
         return one(message, choices, null);
     }
     <T> T one(String message, List<T> choices, FSerializableFunction<T, String> display);
+    default <T> T one(final String message, final List<T> choices, final FSerializableFunction<T, String> display,
+            final Function<T, Iterable<String>> searchKeyProvider) {
+        if (choices == null || choices.isEmpty()) {
+            return null;
+        }
+        if (choices.size() == 1) {
+            return choices.get(0);
+        }
+
+        final List<T> choice = getChoices(message, 1, 1, choices, null, display, searchKeyProvider);
+        return choice.get(0);
+    }
 
     <T> void reveal(String message, List<T> items);
 

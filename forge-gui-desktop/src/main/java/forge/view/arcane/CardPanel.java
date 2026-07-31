@@ -132,6 +132,8 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
     private boolean hasFlash;
     private String zoneBannerText;
     private Color zoneBannerColor;
+    private String externalPlayableBadgeText;
+    private Color externalPlayableBadgeColor;
     private CachedCardImage cachedImage;
     private int groupCount;
     private int hotkeyDigit; // 1..9 paints a numbered badge for Ctrl+digit selection; 0 hides
@@ -462,6 +464,7 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
         if (hotkeyDigit > 0 && cardWidth >= HOTKEY_BADGE_MIN_CARD_WIDTH) {
             drawHotkeyDigitBadge(g);
         }
+        drawExternalPlayableBadge(g);
         if (canShow) {
             drawChosenColorIcons(g);
         }
@@ -636,6 +639,45 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
             final FontMetrics fm = g2d.getFontMetrics();
             g2d.drawString(text, bx + (diameter - fm.stringWidth(text)) / 2,
                     by + (diameter + fm.getAscent()) / 2 - 2);
+        } finally {
+            g2d.dispose();
+        }
+    }
+
+    private void drawExternalPlayableBadge(final Graphics g) {
+        if (externalPlayableBadgeText == null) {
+            return;
+        }
+
+        final Graphics2D g2d = (Graphics2D) g.create();
+        try {
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            final Font font = smallCounterFont != null ? smallCounterFont
+                    : g.getFont().deriveFont(Font.BOLD, Math.max(10, cardWidth / 6f));
+            g2d.setFont(font);
+            final FontMetrics fm = g2d.getFontMetrics();
+
+            final int textWidth = fm.stringWidth(externalPlayableBadgeText);
+            final int textHeight = fm.getAscent();
+            final int padX = Math.max(4, cardWidth / 28);
+            final int padY = Math.max(2, cardHeight / 55);
+            final int badgeWidth = textWidth + padX * 2;
+            final int badgeHeight = textHeight + padY * 2;
+            final int margin = Math.max(3, cardWidth / 40);
+            final int badgeX = cardXOffset + cardWidth - badgeWidth - margin;
+            final int hotkeyOffset = hotkeyDigit > 0 && cardWidth >= HOTKEY_BADGE_MIN_CARD_WIDTH
+                    ? Math.min(HOTKEY_BADGE_MAX_DIAMETER, cardWidth / 5) + margin
+                    : 0;
+            final int badgeY = cardYOffset + margin + hotkeyOffset;
+            final int cornerRadius = Math.max(4, cardWidth / 18);
+
+            g2d.setColor(new Color(0, 0, 0, 160));
+            g2d.fillRoundRect(badgeX + 1, badgeY + 1, badgeWidth, badgeHeight, cornerRadius, cornerRadius);
+            g2d.setColor(externalPlayableBadgeColor != null ? externalPlayableBadgeColor : DEFAULT_ZONE_COLOR);
+            g2d.fillRoundRect(badgeX, badgeY, badgeWidth, badgeHeight, cornerRadius, cornerRadius);
+
+            g2d.setColor(Color.WHITE);
+            g2d.drawString(externalPlayableBadgeText, badgeX + padX, badgeY + padY + textHeight);
         } finally {
             g2d.dispose();
         }
@@ -1054,6 +1096,18 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
     public void setZoneBanner(final String text, final ZoneType zone) {
         this.zoneBannerText = text;
         this.zoneBannerColor = zone != null ? ZONE_COLORS.getOrDefault(zone, DEFAULT_ZONE_COLOR) : null;
+    }
+
+    public void setExternalPlayableBadge(final String text, final ZoneType zone) {
+        this.externalPlayableBadgeText = text;
+        this.externalPlayableBadgeColor = zone != null ? ZONE_COLORS.getOrDefault(zone, DEFAULT_ZONE_COLOR) : DEFAULT_ZONE_COLOR;
+        repaint();
+    }
+
+    public void clearExternalPlayableBadge() {
+        this.externalPlayableBadgeText = null;
+        this.externalPlayableBadgeColor = null;
+        repaint();
     }
 
     public final Point getCardLocation() {

@@ -533,14 +533,25 @@ public final class CMatchUI
                         owner.getId(), update.getZones(), System.identityHashCode(owner));
             }
 
-            boolean setupPlayZone = false, updateHand = false, updateAnte = false, updateZones = false;
+            boolean setupPlayZone = false, updateHand = false, updateZones = false, updatePlayableStrip = false;
             for (final ZoneType zone : update.getZones()) {
                 switch (zone) {
                 case Battlefield:
                     setupPlayZone = true;
                     break;
+                case Flashback:
+                case Graveyard:
+                case Exile:
+                case Command:
+                case Library:
+                case Sideboard:
+                    updatePlayableStrip = true;
+                    updateZones = true;
+                    FloatingZone.refresh(owner, zone);
+                    break;
                 case Hand:
                     updateHand = true;
+                    updatePlayableStrip = true;
                     updateZones = true;
                     FloatingZone.refresh(owner, zone);
                     break;
@@ -573,6 +584,12 @@ public final class CMatchUI
                 }
                 // update Cards in Hand
                 vField.updateDetails();
+            }
+            if (updatePlayableStrip && !updateHand && isLocalPlayer(owner)) {
+                final VHand vHand = getHandFor(owner);
+                if (vHand != null) {
+                    vHand.getLayoutControl().updatePlayableStrip();
+                }
             }
             if (updateZones) {
                 vField.updateZones();
@@ -841,18 +858,29 @@ public final class CMatchUI
                 }
             }
         }
-        else if (zone == ZoneType.Hand) {
-            for (final VHand h : view.getHands()) {
-                final CardPanel panel = h.getHandArea().getCardPanel(id);
-                if (panel != null) {
-                    SDisplayUtil.showTab(h);
-                    return panel;
-                }
+        for (final VHand h : view.getHands()) {
+            final CardPanel panel = h.getHandArea().getCardPanel(id);
+            if (panel != null) {
+                SDisplayUtil.showTab(h);
+                return panel;
             }
         }
-        else if (FLOATING_ZONE_TYPES.contains(zone))
+        if (FLOATING_ZONE_TYPES.contains(zone))
             return FloatingZone.getCardPanel(this, card);
         return null;
+    }
+
+    private boolean isHandAreaCardPanel(final CardView card, final CardPanel panel) {
+        if (card == null || panel == null) {
+            return false;
+        }
+        final int id = card.getId();
+        for (final VHand h : view.getHands()) {
+            if (h.getHandArea().getCardPanel(id) == panel) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -1081,7 +1109,8 @@ public final class CMatchUI
                 SDisplayUtil.showTab(getCPrompt().getView());
             } else {
                 final ZoneType zone = hostCard.getZone();
-                if (ImmutableList.of(ZoneType.Command, ZoneType.Exile, ZoneType.Graveyard, ZoneType.Library).contains(zone)) {
+                if (!isHandAreaCardPanel(hostCard, panel)
+                        && ImmutableList.of(ZoneType.Command, ZoneType.Exile, ZoneType.Graveyard, ZoneType.Library).contains(zone)) {
                     FloatingZone.show(this, hostCard.getController(), zone);
                 }
                 menuParent = panel.getParent();

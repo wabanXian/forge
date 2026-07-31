@@ -22,7 +22,12 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.swing.JLayeredPane;
 import javax.swing.SwingUtilities;
@@ -33,6 +38,7 @@ import com.google.common.collect.Lists;
 import forge.Singletons;
 import forge.game.card.CardView;
 import forge.game.player.PlayerView;
+import forge.game.zone.ZoneType;
 import forge.gui.FThreads;
 import forge.gui.framework.ICDoc;
 import forge.localinstance.properties.ForgePreferences.FPref;
@@ -44,6 +50,7 @@ import forge.view.arcane.CardPanel;
 import forge.view.arcane.HandArea;
 import forge.view.arcane.util.Animation;
 import forge.view.arcane.util.CardPanelMouseAdapter;
+import forge.util.collect.FCollectionView;
 
 /**
  * Controls Swing components of a player's hand instance.
@@ -53,6 +60,7 @@ public class CHand implements ICDoc {
     private final PlayerView player;
     private final VHand view;
     private final List<CardView> ordering = Lists.newArrayList();
+    private final List<Integer> externalPlayableOrdering = Lists.newArrayList();
 
     /**
      * Controls Swing components of a player's hand instance.
@@ -64,9 +72,26 @@ public class CHand implements ICDoc {
         v0.getHandArea().addCardPanelMouseListener(new CardPanelMouseAdapter() {
             @Override
             public void mouseDragEnd(final CardPanel dragPanel, final MouseEvent evt) {
-                final int index = CHand.this.view.getHandArea().getCardPanels().indexOf(dragPanel);
+                final HandArea handArea = CHand.this.view.getHandArea();
+                if (handArea.isExternalPlayable(dragPanel)) {
+                    updateExternalPlayableOrderingFromPanels(handArea.getCardPanels());
+                    updateHand();
+                    return;
+                }
+                int index = 0;
+                for (final CardPanel panel : handArea.getCardPanels()) {
+                    if (panel == dragPanel) {
+                        break;
+                    }
+                    if (!handArea.isExternalPlayable(panel)) {
+                        index++;
+                    }
+                }
                 synchronized (ordering) {
                     ordering.remove(dragPanel.getCard());
+                    if (index > ordering.size()) {
+                        index = ordering.size();
+                    }
                     ordering.add(index, dragPanel.getCard());
                     matchUI.getGameController(p0).reorderHand(dragPanel.getCard(), index);
                 }
@@ -114,6 +139,7 @@ public class CHand implements ICDoc {
 
         final List<CardPanel> placeholders = new ArrayList<>();
         final List<CardPanel> cardPanels = new ArrayList<>();
+        final List<CardView> orderedExternalPlayableCards = orderExternalPlayableCards(getExternalPlayableCards());
 
         for (final CardView card : ordering) {
             CardPanel cardPanel = p.getCardPanel(card.getId());
@@ -124,9 +150,25 @@ public class CHand implements ICDoc {
             } else {
                 cardPanel.setCard(card); //ensure card view is updated
             }
+            cardPanel.setZoneBanner(null, null);
+            cardPanel.clearExternalPlayableBadge();
             cardPanels.add(cardPanel);
         }
 
+        for (final CardView card : orderedExternalPlayableCards) {
+            CardPanel cardPanel = p.getCardPanel(card.getId());
+            if (cardPanel == null) {
+                cardPanel = new CardPanel(matchUI, card);
+                cardPanel.setDisplayEnabled(true);
+            } else {
+                cardPanel.setCard(card);
+            }
+            cardPanel.setZoneBanner(null, null);
+            cardPanel.setExternalPlayableBadge(getExternalZoneLabel(card.getZone()), card.getZone());
+            cardPanels.add(cardPanel);
+        }
+
+        p.setExternalPlayableCards(orderedExternalPlayableCards);
         p.setCardPanels(cardPanels);
         view.updateTabLabel(ordering.size());
 
@@ -186,6 +228,77 @@ public class CHand implements ICDoc {
         for (final CardPanel placeholder : placeholders) {
             Animation.moveCard(placeholder);
         }
+    }
+
+    public void updatePlayableStrip() {
+        updateHand();
+    }
+
+    private List<CardView> getExternalPlayableCards() {
+        final List<CardView> externalCards = new ArrayList<>();
+        if (player != null && matchUI.isLocalPlayer(player)) {
+            final FCollectionView<CardView> cards = player.getCards(ZoneType.Flashback);
+            if (cards != null) {
+                for (final CardView card : cards) {
+                    final ZoneType zone = card.getZone();
+                    if (zone != null && zone != ZoneType.Hand && matchUI.mayView(card)) {
+                        externalCards.add(card);
+                    }
+                }
+            }
+        }
+        return externalCards;
+    }
+
+    private List<CardView> orderExternalPlayableCards(final List<CardView> externalCards) {
+        reconcileExternalPlayableOrdering(externalCards);
+
+        final Map<Integer, CardView> externalById = externalCards.stream()
+                .collect(Collectors.toMap(CardView::getId, Function.identity(), (first, second) -> first));
+        final List<CardView> orderedCards = new ArrayList<>();
+        for (final Integer id : externalPlayableOrdering) {
+            final CardView card = externalById.get(id);
+            if (card != null) {
+                orderedCards.add(card);
+            }
+        }
+        return orderedCards;
+    }
+
+    private void reconcileExternalPlayableOrdering(final List<CardView> externalCards) {
+        final Set<Integer> currentIds = externalCards.stream().map(CardView::getId).collect(Collectors.toCollection(HashSet::new));
+        externalPlayableOrdering.removeIf(id -> !currentIds.contains(id));
+
+        final Set<Integer> orderedIds = new HashSet<>(externalPlayableOrdering);
+        for (final CardView card : externalCards) {
+            final int id = card.getId();
+            if (orderedIds.add(id)) {
+                externalPlayableOrdering.add(id);
+            }
+        }
+    }
+
+    private void updateExternalPlayableOrderingFromPanels(final List<CardPanel> panels) {
+        externalPlayableOrdering.clear();
+        for (final CardPanel panel : panels) {
+            if (view.getHandArea().isExternalPlayable(panel)) {
+                externalPlayableOrdering.add(panel.getCard().getId());
+            }
+        }
+    }
+
+    private static String getExternalZoneLabel(final ZoneType zone) {
+        if (zone == null) {
+            return null;
+        }
+        return switch (zone) {
+            case Graveyard -> "GY";
+            case Exile -> "EX";
+            case Command -> "CMD";
+            case Library -> "LIB";
+            case Sideboard -> "SB";
+            default -> zone.name().toUpperCase();
+        };
     }
 
     @Override

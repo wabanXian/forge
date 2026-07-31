@@ -18,7 +18,11 @@
 package forge.view.arcane;
 
 import java.awt.event.MouseEvent;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
+import forge.game.card.CardView;
 import forge.localinstance.properties.ForgePreferences.FPref;
 import forge.model.FModel;
 import forge.screens.match.CMatchUI;
@@ -36,6 +40,7 @@ import forge.toolbox.MouseTriggerEvent;
 public class HandArea extends CardArea {
     /** Constant <code>serialVersionUID=7488132628637407745L</code>. */
     private static final long serialVersionUID = 7488132628637407745L;
+    private final Set<Integer> externalPlayableIds = new HashSet<>();
 
     /**
      * <p>
@@ -57,6 +62,21 @@ public class HandArea extends CardArea {
     @Override
     protected boolean cardPanelDraggable(final CardPanel panel) {
         return panel.getCard() != null;
+    }
+
+    public void setExternalPlayableCards(final Collection<CardView> cards) {
+        externalPlayableIds.clear();
+        for (final CardView card : cards) {
+            externalPlayableIds.add(card.getId());
+        }
+    }
+
+    public boolean isExternalPlayable(final CardPanel panel) {
+        return panel != null && isExternalPlayable(panel.getCard());
+    }
+
+    public boolean isExternalPlayable(final CardView card) {
+        return card != null && externalPlayableIds.contains(card.getId());
     }
 
     /** {@inheritDoc} */

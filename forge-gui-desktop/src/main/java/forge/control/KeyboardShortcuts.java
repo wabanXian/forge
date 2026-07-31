@@ -105,6 +105,15 @@ public class KeyboardShortcuts {
             }
         };
 
+        /** Show card detail. */
+        final Action actShowCardDetail = new AbstractAction() {
+            @Override
+            public void actionPerformed(final ActionEvent e) {
+                if (!Singletons.getControl().getCurrentScreen().isMatchScreen()) { return; }
+                SDisplayUtil.showTab(EDocID.CARD_DETAIL.getDoc());
+            }
+        };
+
         /** Undo last action. */
         final Action actUndo = new AbstractAction() {
             @Override
@@ -277,6 +286,7 @@ public class KeyboardShortcuts {
         list.add(new Shortcut(FPref.SHORTCUT_SHOWCOMBAT, localizer.getMessage("lblSHORTCUT_SHOWCOMBAT"), actShowCombat, am, im));
         list.add(new Shortcut(FPref.SHORTCUT_SHOWCONSOLE, localizer.getMessage("lblSHORTCUT_SHOWCONSOLE"), actShowConsole, am, im));
         list.add(new Shortcut(FPref.SHORTCUT_SHOWDEV, localizer.getMessage("lblSHORTCUT_SHOWDEV"), actShowDev, am, im));
+        list.add(new Shortcut(FPref.SHORTCUT_SHOWCARDDETAIL, localizer.getMessage("lblSHORTCUT_SHOWCARDDETAIL"), actShowCardDetail, am, im));
         list.add(new Shortcut(FPref.SHORTCUT_UNDO, localizer.getMessage("lblSHORTCUT_UNDO"), actUndo, am, im));
         list.add(new Shortcut(FPref.SHORTCUT_CONCEDE, localizer.getMessage("lblSHORTCUT_CONCEDE"), actConcede, am, im));
         list.add(new Shortcut(FPref.SHORTCUT_ENDTURN, localizer.getMessage("lblSHORTCUT_ENDTURN"), actEndTurn, am, im));

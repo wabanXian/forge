@@ -137,7 +137,7 @@ public class Puzzle extends GameState implements InventoryItem, Comparable<Puzzl
         int turnLimit = turns + turnCorr;
 
         // Default goal: win the game; lose on turn X
-        String trig = "Mode$ Phase | Phase$ Cleanup | TriggerZones$ Command | Static$ True | " +
+        String trig = "Mode$ Phase | Phase$ Cleanup | TriggerZones$ Command | " +
                 "TurnCount$ " + turnLimit + " | TriggerDescription$ At the beginning of your cleanup step on the specified turn, you lose the game.";
         String eff = "DB$ LosesGame | Defined$ You";
 

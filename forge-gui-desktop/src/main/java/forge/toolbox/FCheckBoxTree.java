@@ -1,10 +1,12 @@
 package forge.toolbox;
 
+import forge.card.CardEdition;
 import net.miginfocom.swing.MigLayout;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.text.Normalizer;
 import java.util.*;
 import java.util.List;
 
@@ -13,6 +15,7 @@ import javax.swing.event.EventListenerList;
 import javax.swing.plaf.IconUIResource;
 import javax.swing.plaf.basic.BasicTreeUI;
 import javax.swing.tree.*;
+import java.util.function.Predicate;
 
 /**
  * A custom JTree of FCheckBox items using Forge skin properties that allows Path selection.
@@ -137,10 +140,23 @@ public class FCheckBoxTree extends JTree {
         public boolean allChildrenEnabled() { return this.enabledChildrenCount == this.numberOfChildren; }
     }
 
+    private static class NodeStatus {
+        boolean isSelected;
+        boolean isEnabled;
+
+        NodeStatus(boolean isSelected, boolean isEnabled) {
+            this.isSelected = isSelected;
+            this.isEnabled = isEnabled;
+        }
+    }
+
     // == Fields of the FCheckboxTree class ==
     // =======================================
     FCheckBoxTree selfPointer = this;
     private static final String ROOTNODE_LABEL = "/";  // won't be displayed
+    private TreeMap<FTreeNodeData, List<FTreeNodeData>> fullTreeData;
+    private String currentFilterText = "";
+    private Map<Object, NodeStatus> nodeStatusByKey = new HashMap<>();
     private Map<Object, FTreeNode> nodesSet = new HashMap<>();  // A map of all nodes in the tree (model)
 
     private HashMap<TreePath, TreeNodeState> treeNodesStates;
@@ -218,6 +234,24 @@ public class FCheckBoxTree extends JTree {
      * be casted afterwards, accordingly.
      * */
     public Object[] getCheckedValues(boolean leafNodesOnly) {
+        return getCheckedValues(leafNodesOnly, false);
+    }
+
+    public Object[] getCheckedValues(boolean leafNodesOnly, boolean includeHidden) {
+        if (includeHidden && fullTreeData != null) {
+            ArrayList<Object> checkedValues = new ArrayList<>();
+            for (Map.Entry<FTreeNodeData, List<FTreeNodeData>> entry : fullTreeData.entrySet()) {
+                if (!leafNodesOnly && isStoredSelected(entry.getKey())) {
+                    checkedValues.add(entry.getKey().item);
+                }
+                for (FTreeNodeData childNodeData : entry.getValue()) {
+                    if (isStoredSelected(childNodeData)) {
+                        checkedValues.add(childNodeData.item);
+                    }
+                }
+            }
+            return checkedValues.toArray(new Object[0]);
+        }
         ArrayList<Object> checkedValues = new ArrayList<>();
         for (TreePath tp : this.getCheckedPaths()){
             FTreeNode node = (FTreeNode) tp.getLastPathComponent();
@@ -237,6 +271,14 @@ public class FCheckBoxTree extends JTree {
     }
 
     public void resetCheckingState() {
+        if (fullTreeData != null) {
+            captureVisibleNodeStatus();
+            for (NodeStatus status : nodeStatusByKey.values()) {
+                status.isSelected = false;
+            }
+            rebuildVisibleTree();
+            return;
+        }
         treeNodesStates = new HashMap<>();
         checkedPaths = new HashSet<>();
         nodesSet = new HashMap<>();
@@ -271,6 +313,80 @@ public class FCheckBoxTree extends JTree {
         return activeChildren;
     }
 
+    public int getNumberOfActiveChildNodesByKey(Object parentKey) {
+        if (fullTreeData == null) {
+            FTreeNode node = getNodeByKey(parentKey);
+            return node == null ? -1 : getNumberOfActiveChildNodes(node);
+        }
+
+        int activeChildren = 0;
+        List<FTreeNodeData> childNodes = getFullChildNodesByParentKey(parentKey);
+        if (childNodes == null) {
+            return -1;
+        }
+        for (FTreeNodeData childNode : childNodes) {
+            if (isStoredEnabled(childNode)) {
+                activeChildren++;
+            }
+        }
+        return activeChildren;
+    }
+
+    public List<Object> getActiveChildNodeKeysByKey(Object parentKey) {
+        List<Object> activeChildKeys = new ArrayList<>();
+        if (fullTreeData == null) {
+            FTreeNode node = getNodeByKey(parentKey);
+            if (node == null) {
+                return activeChildKeys;
+            }
+            for (FTreeNode childNode : getActiveChildNodes(node)) {
+                activeChildKeys.add(childNode.getKey());
+            }
+            return activeChildKeys;
+        }
+
+        List<FTreeNodeData> childNodes = getFullChildNodesByParentKey(parentKey);
+        if (childNodes == null) {
+            return activeChildKeys;
+        }
+        for (FTreeNodeData childNode : childNodes) {
+            if (isStoredEnabled(childNode)) {
+                activeChildKeys.add(childNode.getKey());
+            }
+        }
+        return activeChildKeys;
+    }
+
+    public List<FTreeNode> findNodes(String query) {
+        final String normalizedQuery = normalizeSearchText(query);
+        if (normalizedQuery.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return findNodes(nodeData -> matchesNode(nodeData, normalizedQuery));
+    }
+
+    public List<FTreeNode> findNodes(Predicate<FTreeNodeData> matcher) {
+        if (matcher == null) {
+            return Collections.emptyList();
+        }
+        List<FTreeNode> matches = new ArrayList<>();
+        FTreeNode rootNode = (FTreeNode) getModel().getRoot();
+        collectMatchingNodes(rootNode, matcher, matches);
+        return matches;
+    }
+
+    public void scrollToNode(FTreeNode node) {
+        if (node == null) {
+            return;
+        }
+        TreePath path = new TreePath(node.getPath());
+        TreePath parentPath = path.getParentPath();
+        if (parentPath != null) {
+            expandPath(parentPath);
+        }
+        scrollPathToVisible(path);
+    }
+
     public int getNumberOfSelectedChildNodes(FTreeNode node){
         TreeNodeState cn = getTreeNodeState(node);
         if (cn != null)
@@ -284,10 +400,60 @@ public class FCheckBoxTree extends JTree {
         setPathCheckStatus(treePath, isChecked);
     }
 
+    public void setNodeCheckStatusByKey(Object key, boolean isChecked) {
+        setNodeCheckStatusByKeys(Collections.singleton(key), isChecked);
+    }
+
+    public void setNodeCheckStatusByKeys(Collection<?> keys, boolean isChecked) {
+        if (fullTreeData == null) {
+            for (Object key : keys) {
+                FTreeNode node = getNodeByKey(key);
+                if (node != null) {
+                    setNodeCheckStatus(node, isChecked);
+                }
+            }
+            return;
+        }
+
+        captureVisibleNodeStatus();
+        for (Object key : keys) {
+            setStoredCheckStatusByKey(key, isChecked);
+        }
+        recalculateStoredParentStatuses();
+        rebuildVisibleTree();
+        fireCheckChangeEvent(new TreeCheckChangeEvent(new Object()));
+        selfPointer.repaint();
+    }
+
     public void setNodeEnabledStatus(FTreeNode node, boolean isEnabled){
         TreeNode[] path = node.getPath();
         TreePath treePath = new TreePath(path);
         setPathEnableStatus(treePath, isEnabled);
+    }
+
+    public void setNodeEnabledStatusByKey(Object key, boolean isEnabled) {
+        setNodeEnabledStatusByKeys(Collections.singleton(key), isEnabled);
+    }
+
+    public void setNodeEnabledStatusByKeys(Collection<?> keys, boolean isEnabled) {
+        if (fullTreeData == null) {
+            for (Object key : keys) {
+                FTreeNode node = getNodeByKey(key);
+                if (node != null) {
+                    setNodeEnabledStatus(node, isEnabled);
+                }
+            }
+            return;
+        }
+
+        captureVisibleNodeStatus();
+        for (Object key : keys) {
+            setStoredEnabledStatusByKey(key, isEnabled);
+        }
+        recalculateStoredParentStatuses();
+        rebuildVisibleTree();
+        fireEnabledChangeEvent(new TreeEnabledChangeEvent(new Object()));
+        selfPointer.repaint();
     }
 
     /** Initialise a new TreeModel from the input Subtree represented as a Map of FTreeNodeInfo instances.
@@ -296,6 +462,26 @@ public class FCheckBoxTree extends JTree {
      *
      */
     public void setTreeData(TreeMap<FTreeNodeData, List<FTreeNodeData>> nodesMap) {
+        this.fullTreeData = nodesMap;
+        this.currentFilterText = "";
+        initializeNodeStatus(nodesMap);
+        setVisibleTreeData(buildVisibleTreeData(""));
+    }
+
+    public void applyFilter(String query) {
+        captureVisibleNodeStatus();
+        currentFilterText = query == null ? "" : query;
+        setVisibleTreeData(buildVisibleTreeData(currentFilterText));
+        if (!normalizeSearchText(currentFilterText).isEmpty()) {
+            expandAllRows();
+        }
+    }
+
+    public void clearFilter() {
+        applyFilter("");
+    }
+
+    private void setVisibleTreeData(TreeMap<FTreeNodeData, List<FTreeNodeData>> nodesMap) {
         FTreeNode rootNode = new FTreeNode(new FTreeNodeData(FCheckBoxTree.ROOTNODE_LABEL));
         for (FTreeNodeData keyNodeInfo : nodesMap.keySet()) {
             FTreeNode keyNode = new FTreeNode(keyNodeInfo);
@@ -355,9 +541,243 @@ public class FCheckBoxTree extends JTree {
         }
     }
 
+    private void initializeNodeStatus(TreeMap<FTreeNodeData, List<FTreeNodeData>> nodesMap) {
+        nodeStatusByKey = new HashMap<>();
+        for (Map.Entry<FTreeNodeData, List<FTreeNodeData>> entry : nodesMap.entrySet()) {
+            storeInitialNodeStatus(entry.getKey());
+            for (FTreeNodeData childNodeInfo : entry.getValue()) {
+                storeInitialNodeStatus(childNodeInfo);
+            }
+        }
+    }
+
+    private void storeInitialNodeStatus(FTreeNodeData nodeData) {
+        nodeStatusByKey.put(nodeData.getKey(), new NodeStatus(nodeData.isSelected, nodeData.isEnabled));
+    }
+
+    private boolean isStoredSelected(FTreeNodeData nodeData) {
+        NodeStatus status = nodeStatusByKey.get(nodeData.getKey());
+        return status != null && status.isSelected && status.isEnabled;
+    }
+
+    private boolean isStoredEnabled(FTreeNodeData nodeData) {
+        NodeStatus status = nodeStatusByKey.get(nodeData.getKey());
+        return status == null || status.isEnabled;
+    }
+
+    private List<FTreeNodeData> getFullChildNodesByParentKey(Object parentKey) {
+        if (fullTreeData == null) {
+            return null;
+        }
+        for (Map.Entry<FTreeNodeData, List<FTreeNodeData>> entry : fullTreeData.entrySet()) {
+            if (keysMatch(entry.getKey().getKey(), parentKey)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private void setStoredCheckStatusByKey(Object key, boolean isChecked) {
+        List<FTreeNodeData> childNodes = getFullChildNodesByParentKey(key);
+        if (childNodes != null) {
+            for (FTreeNodeData childNode : childNodes) {
+                setStoredCheckStatus(childNode, isChecked);
+            }
+            return;
+        }
+
+        for (Map.Entry<FTreeNodeData, List<FTreeNodeData>> entry : fullTreeData.entrySet()) {
+            for (FTreeNodeData childNode : entry.getValue()) {
+                if (keysMatch(childNode.getKey(), key)) {
+                    setStoredCheckStatus(childNode, isChecked);
+                    return;
+                }
+            }
+        }
+    }
+
+    private void setStoredCheckStatus(FTreeNodeData nodeData, boolean isChecked) {
+        NodeStatus status = nodeStatusByKey.get(nodeData.getKey());
+        if (status == null) {
+            return;
+        }
+        status.isSelected = status.isEnabled && isChecked;
+    }
+
+    private void setStoredEnabledStatusByKey(Object key, boolean isEnabled) {
+        List<FTreeNodeData> childNodes = getFullChildNodesByParentKey(key);
+        if (childNodes != null) {
+            for (FTreeNodeData childNode : childNodes) {
+                setStoredEnabledStatus(childNode, isEnabled);
+            }
+            return;
+        }
+
+        for (Map.Entry<FTreeNodeData, List<FTreeNodeData>> entry : fullTreeData.entrySet()) {
+            for (FTreeNodeData childNode : entry.getValue()) {
+                if (keysMatch(childNode.getKey(), key)) {
+                    setStoredEnabledStatus(childNode, isEnabled);
+                    return;
+                }
+            }
+        }
+    }
+
+    private boolean keysMatch(Object storedKey, Object requestedKey) {
+        if (Objects.equals(storedKey, requestedKey)) {
+            return true;
+        }
+        return requestedKey != null && Objects.equals(storedKey, requestedKey.hashCode());
+    }
+
+    private void setStoredEnabledStatus(FTreeNodeData nodeData, boolean isEnabled) {
+        NodeStatus status = nodeStatusByKey.get(nodeData.getKey());
+        if (status == null) {
+            return;
+        }
+        status.isEnabled = isEnabled;
+        if (!isEnabled) {
+            status.isSelected = false;
+        }
+    }
+
+    private void recalculateStoredParentStatuses() {
+        if (fullTreeData == null) {
+            return;
+        }
+        for (Map.Entry<FTreeNodeData, List<FTreeNodeData>> entry : fullTreeData.entrySet()) {
+            NodeStatus parentStatus = nodeStatusByKey.get(entry.getKey().getKey());
+            if (parentStatus == null) {
+                continue;
+            }
+            parentStatus.isEnabled = false;
+            parentStatus.isSelected = false;
+            for (FTreeNodeData childNode : entry.getValue()) {
+                NodeStatus childStatus = nodeStatusByKey.get(childNode.getKey());
+                if (childStatus != null && childStatus.isEnabled) {
+                    parentStatus.isEnabled = true;
+                    parentStatus.isSelected |= childStatus.isSelected;
+                }
+            }
+        }
+    }
+
+    private void captureVisibleNodeStatus() {
+        FTreeNode node = (FTreeNode) getModel().getRoot();
+        if (node == null || nodeStatusByKey == null) {
+            return;
+        }
+        captureVisibleNodeStatus(node);
+    }
+
+    private void captureVisibleNodeStatus(FTreeNode node) {
+        TreeNodeState state = getTreeNodeState(node);
+        FTreeNodeData nodeData = node.getUserObject();
+        if (state != null && nodeData != null) {
+            nodeStatusByKey.put(nodeData.getKey(), new NodeStatus(state.isSelected, state.isEnabled));
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            captureVisibleNodeStatus((FTreeNode) node.getChildAt(i));
+        }
+    }
+
+    private void rebuildVisibleTree() {
+        setVisibleTreeData(buildVisibleTreeData(currentFilterText));
+        if (!normalizeSearchText(currentFilterText).isEmpty()) {
+            expandAllRows();
+        }
+    }
+
+    private TreeMap<FTreeNodeData, List<FTreeNodeData>> buildVisibleTreeData(String query) {
+        TreeMap<FTreeNodeData, List<FTreeNodeData>> visibleTreeData = new TreeMap<>();
+        if (fullTreeData == null) {
+            return visibleTreeData;
+        }
+
+        String normalizedQuery = normalizeSearchText(query);
+        for (Map.Entry<FTreeNodeData, List<FTreeNodeData>> entry : fullTreeData.entrySet()) {
+            FTreeNodeData parentNodeData = entry.getKey();
+            boolean parentMatches = normalizedQuery.isEmpty() || matchesNode(parentNodeData, normalizedQuery);
+            List<FTreeNodeData> visibleChildren = new ArrayList<>();
+            for (FTreeNodeData childNodeData : entry.getValue()) {
+                if (parentMatches || matchesNode(childNodeData, normalizedQuery)) {
+                    visibleChildren.add(copyNodeDataWithStoredStatus(childNodeData));
+                }
+            }
+            if (!visibleChildren.isEmpty()) {
+                visibleTreeData.put(copyNodeDataWithStoredStatus(parentNodeData), visibleChildren);
+            }
+        }
+        return visibleTreeData;
+    }
+
+    private FTreeNodeData copyNodeDataWithStoredStatus(FTreeNodeData nodeData) {
+        FTreeNodeData copy = new FTreeNodeData(nodeData.item, nodeData.label, nodeData.key);
+        copy.isSelected = isStoredSelected(nodeData);
+        copy.isEnabled = isStoredEnabled(nodeData);
+        return copy;
+    }
+
+    private void collectMatchingNodes(FTreeNode node, Predicate<FTreeNodeData> matcher, List<FTreeNode> matches) {
+        if (node == null) {
+            return;
+        }
+        FTreeNodeData nodeData = node.getUserObject();
+        if (node.isLeaf() && matcher.test(nodeData)) {
+            matches.add(node);
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            collectMatchingNodes((FTreeNode) node.getChildAt(i), matcher, matches);
+        }
+    }
+
+    private static boolean matchesSearchText(String text, String normalizedQuery) {
+        return normalizeSearchText(text).contains(normalizedQuery);
+    }
+
+    private static boolean matchesNode(FTreeNodeData nodeData, String normalizedQuery) {
+        if (nodeData == null) {
+            return false;
+        }
+        if (nodeData.item instanceof CardEdition edition) {
+            return matchesSearchText(edition.getName(), normalizedQuery)
+                    || matchesSearchText(edition.getCode(), normalizedQuery)
+                    || matchesSearchText(edition.getCode2(), normalizedQuery)
+                    || matchesSearchText(edition.getAlias(), normalizedQuery)
+                    || matchesSearchText(getScryfallCodeForSearch(edition), normalizedQuery)
+                    || (edition.getType() != null && matchesSearchText(edition.getType().toString(), normalizedQuery));
+        }
+        return matchesSearchText(nodeData.label, normalizedQuery)
+                || (nodeData.key != null && matchesSearchText(nodeData.key.toString(), normalizedQuery))
+                || (nodeData.item != null && matchesSearchText(nodeData.item.toString(), normalizedQuery));
+    }
+
+    private static String getScryfallCodeForSearch(CardEdition edition) {
+        try {
+            return edition.getScryfallCode();
+        } catch (NullPointerException e) {
+            return null;
+        }
+    }
+
+    private void expandAllRows() {
+        for (int i = 0; i < getRowCount(); i++) {
+            expandRow(i);
+        }
+    }
+
+    private static String normalizeSearchText(String text) {
+        if (text == null) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return normalized.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N} ]", "").trim();
+    }
+
     private void setPathCheckStatus(TreePath tp, boolean checkStatus) {
         setCheckedStatusOnTree(tp, checkStatus);
         updatePredecessors(tp);
+        captureVisibleNodeStatus();
         // Firing the check change event
         fireCheckChangeEvent(new TreeCheckChangeEvent(new Object()));
         // Repainting tree after the data structures were updated
@@ -367,6 +787,7 @@ public class FCheckBoxTree extends JTree {
     private void setPathEnableStatus(TreePath tp, boolean enableStatus) {
         percolateEnabledStatusOnSubtree(tp, enableStatus);
         updatePredecessors(tp);
+        captureVisibleNodeStatus();
         // Firing the enabled change event
         fireEnabledChangeEvent(new TreeEnabledChangeEvent(new Object()));
         // Repainting tree after the data structures were updated

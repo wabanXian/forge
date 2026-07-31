@@ -5,6 +5,8 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import forge.Singletons;
 import forge.toolbox.*;
@@ -15,7 +17,6 @@ import forge.localinstance.skin.FSkinProp;
 import forge.model.FModel;
 import forge.util.Localizer;
 import net.miginfocom.swing.MigLayout;
-import forge.toolbox.FCheckBoxTree.FTreeNode;
 import forge.toolbox.FCheckBoxTree.FTreeNodeData;
 
 public class DialogChooseSets {
@@ -135,6 +136,10 @@ public class DialogChooseSets {
 			allEditionTypes.put(editionType, enabledEditionsOfTypeCounter);
 		}
 		this.checkBoxTree.setTreeData(editionTypeTreeData);
+		List<String> allSetCodes = new ArrayList<>();
+		for (CardEdition ce : allCardEditions) {
+			allSetCodes.add(ce.getCode());
+		}
 
 		// === 0. MAIN PANEL WINDOW ===
 		// ===================================================================
@@ -277,12 +282,7 @@ public class DialogChooseSets {
                    - all spinners are enabled and their maximum value updated accordingly from the Tree status
                 */
                 if (allowedSetCodes.size() == 0) {
-                    for (CardEdition ce : allCardEditions) {
-                        String code = ce.getCode();
-                        FTreeNode node = checkBoxTree.getNodeByKey(code);
-                        if (node != null)
-                            checkBoxTree.setNodeEnabledStatus(node, true);
-                    }
+                    checkBoxTree.setNodeEnabledStatusByKeys(allSetCodes, true);
                     for (CardEdition.Type editionType : allEditionTypes.keySet()) {
                         int numberOfEnabledEditions = allEditionTypes.get(editionType);
                         if (numberOfEnabledEditions == 0)
@@ -292,9 +292,8 @@ public class DialogChooseSets {
                         FLabel label = labelsEditionTypeMap.get(editionType);
                         spinner.setEnabled(true);
                         label.setEnabled(true);
-                        FTreeNode node = checkBoxTree.getNodeByKey(editionType);
-                        if (node != null){
-                            int maxValue = checkBoxTree.getNumberOfActiveChildNodes(node);
+                        int maxValue = checkBoxTree.getNumberOfActiveChildNodesByKey(editionType);
+                        if (maxValue >= 0){
                             int currentValue = (int) spinner.getValue();
                             spinner.setValue(Math.min(currentValue, maxValue));
                             SpinnerNumberModel m = (SpinnerNumberModel) spinner.getModel();
@@ -336,16 +335,8 @@ public class DialogChooseSets {
                 typesToDisable.removeAll(allowedTypes);
 
                 // == Update Checkbox Tree ==
-                for (String code : codesToDisable) {
-                    FTreeNode node = checkBoxTree.getNodeByKey(code);
-                    if (node != null)
-                        checkBoxTree.setNodeEnabledStatus(node, false);
-                }
-                for (String code : allowedSetCodes) {
-                    FTreeNode node = checkBoxTree.getNodeByKey(code);
-                    if (node != null)
-                        checkBoxTree.setNodeEnabledStatus(node, true);
-                }
+                checkBoxTree.setNodeEnabledStatusByKeys(codesToDisable, false);
+                checkBoxTree.setNodeEnabledStatusByKeys(allowedSetCodes, true);
                 // == update spinners ==
                 for (CardEdition.Type editionType : typesToDisable) {
                     FSpinner spinner = spinnersEditionTypeMap.get(editionType);
@@ -361,9 +352,8 @@ public class DialogChooseSets {
                     label.setEnabled(true);
                     FSpinner spinner = spinnersEditionTypeMap.get(editionType);
                     spinner.setEnabled(true);
-                    FTreeNode node = checkBoxTree.getNodeByKey(editionType);
-                    if (node != null){
-                        int maxValue = checkBoxTree.getNumberOfActiveChildNodes(node);
+                    int maxValue = checkBoxTree.getNumberOfActiveChildNodesByKey(editionType);
+                    if (maxValue >= 0){
                         int currentValue = (int) spinner.getValue();
                         spinner.setValue(Math.min(currentValue, maxValue));
                         SpinnerNumberModel m = (SpinnerNumberModel) spinner.getModel();
@@ -382,12 +372,7 @@ public class DialogChooseSets {
 		FRadioButton noFormatSelectionButton = new FRadioButton(Localizer.getInstance().getMessage("lblNoFormatRestriction"));
 		noFormatSelectionButton.setActionCommand("No Format");
 		noFormatSelectionButton.addActionListener(e -> {
-            for (CardEdition ce: allCardEditions){
-                String code = ce.getCode();
-                FTreeNode node = checkBoxTree.getNodeByKey(code);
-                if (node != null)
-                    checkBoxTree.setNodeEnabledStatus(node, true);
-            }
+            checkBoxTree.setNodeEnabledStatusByKeys(allSetCodes, true);
             for (CardEdition.Type editionType : allEditionTypes.keySet()) {
                 if (allEditionTypes.get(editionType) == 0)
                     // This component will remain disabled, no matter the format selected
@@ -396,9 +381,8 @@ public class DialogChooseSets {
                 FLabel label = labelsEditionTypeMap.get(editionType);
                 spinner.setEnabled(true);
                 label.setEnabled(true);
-                FTreeNode node = checkBoxTree.getNodeByKey(editionType);
-                if (node != null){
-                    int maxValue = checkBoxTree.getNumberOfActiveChildNodes(node);
+                int maxValue = checkBoxTree.getNumberOfActiveChildNodesByKey(editionType);
+                if (maxValue >= 0){
                     int currentValue = (int) spinner.getValue();
                     spinner.setValue(Math.min(currentValue, maxValue));
                     SpinnerNumberModel m = (SpinnerNumberModel) spinner.getModel();
@@ -424,6 +408,16 @@ public class DialogChooseSets {
 		editionSelectionPanel.add(new FLabel.Builder().text(
 				Localizer.getInstance().getMessage("lblCardEditionTypeList")).fontSize(14)
 				.fontStyle(Font.BOLD).build(), "h 40!, w 100%, center, span 1");
+		FTextField searchField = new FTextField.Builder()
+				.ghostText(Localizer.getInstance().getMessage("lblSearch"))
+				.showGhostTextWithFocus()
+				.build();
+		searchField.getDocument().addDocumentListener(new DocumentListener() {
+			@Override public void insertUpdate(DocumentEvent e) { applySetFilter(searchField.getText(), mainDialogPanel); }
+			@Override public void removeUpdate(DocumentEvent e) { applySetFilter(searchField.getText(), mainDialogPanel); }
+			@Override public void changedUpdate(DocumentEvent e) { applySetFilter(searchField.getText(), mainDialogPanel); }
+		});
+		editionSelectionPanel.add(searchField, "w 100%, h 26!, span 1");
 		this.checkBoxTree.setOpaque(false);
 		FScrollPane selectionScroller = new FScrollPane(checkBoxTree, true);
 		editionSelectionPanel.add(selectionScroller, "span 1, w 100%");
@@ -445,6 +439,9 @@ public class DialogChooseSets {
 			mainDialogPanel.repaintSelf();
 		});
 		randomSelectionButton.addActionListener(actionEvent -> {
+			if (!searchField.getText().isEmpty()) {
+				searchField.setText("");
+			}
 			Map<CardEdition.Type, Integer> countPerEditionType = new HashMap<>();
 			for (CardEdition.Type editionType: allEditionTypes.keySet()){
 				if (allEditionTypes.get(editionType) == 0)
@@ -464,12 +461,10 @@ public class DialogChooseSets {
 			formatButton.doClick();
 			for (CardEdition.Type editionType : countPerEditionType.keySet()){
 				int totalToSelect = countPerEditionType.get(editionType);
-				FTreeNode setTypeNode = checkBoxTree.getNodeByKey(editionType);
-				if (setTypeNode != null){
-					List<FTreeNode> activeChildNodes = checkBoxTree.getActiveChildNodes(setTypeNode);
-					Collections.shuffle(activeChildNodes);
-					for (int i = 0; i < totalToSelect; i++)
-						checkBoxTree.setNodeCheckStatus(activeChildNodes.get(i), true);
+				List<Object> activeChildKeys = checkBoxTree.getActiveChildNodeKeysByKey(editionType);
+				if (!activeChildKeys.isEmpty()){
+					Collections.shuffle(activeChildKeys);
+					checkBoxTree.setNodeCheckStatusByKeys(activeChildKeys.subList(0, Math.min(totalToSelect, activeChildKeys.size())), true);
 				}
 			}
 			mainDialogPanel.repaintSelf();
@@ -549,8 +544,13 @@ public class DialogChooseSets {
 		return wantReprints;
 	}
 
+	private void applySetFilter(String searchText, FPanel mainDialogPanel) {
+		checkBoxTree.applyFilter(searchText);
+		mainDialogPanel.repaintSelf();
+	}
+
 	private void handleOk() {
-		Object[] checkedValues = this.checkBoxTree.getCheckedValues(true);
+		Object[] checkedValues = this.checkBoxTree.getCheckedValues(true, true);
 		for (Object data: checkedValues){
 			CardEdition edition = (CardEdition) data;
 			selectedSets.add(edition.getCode());

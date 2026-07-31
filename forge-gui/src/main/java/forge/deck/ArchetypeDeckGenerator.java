@@ -5,6 +5,7 @@ import forge.deck.io.Archetype;
 import forge.game.GameFormat;
 import forge.item.PaperCard;
 import forge.model.FModel;
+import forge.util.Localizer;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
@@ -19,7 +20,9 @@ public class ArchetypeDeckGenerator extends DeckProxy implements Comparable<Arch
         for(Archetype archetype: CardArchetypeLDAGenerator.ldaArchetypes.get(format.getName())) {
             decks.add(new ArchetypeDeckGenerator(archetype, format, isForAi));
         }
-
+        if (!decks.isEmpty()) {
+            decks.add(0, new ArchetypeDeckGenerator(decks));
+        }
         return decks;
     }
     private final Archetype archetype;
@@ -27,6 +30,7 @@ public class ArchetypeDeckGenerator extends DeckProxy implements Comparable<Arch
     private final GameFormat format;
     private final boolean isForAi;
     private PaperCard card;
+    private final List<DeckProxy> randomCandidates;
 
 
     private ArchetypeDeckGenerator(Archetype archetype0, GameFormat format0, boolean isForAi0) {
@@ -35,6 +39,7 @@ public class ArchetypeDeckGenerator extends DeckProxy implements Comparable<Arch
         index = 0;
         format=format0;
         isForAi=isForAi0;
+        randomCandidates = null;
         for(Pair<String, Double> cardPair : archetype.getCardProbabilities()){
             PaperCard candidate = FModel.getMagicDb().getCommonCards().getUniqueByName(cardPair.getLeft());
             if(!candidate.getRules().getType().isLand()){
@@ -44,6 +49,15 @@ public class ArchetypeDeckGenerator extends DeckProxy implements Comparable<Arch
         }
     }
 
+    private ArchetypeDeckGenerator(final List<DeckProxy> candidates) {
+        super();
+        archetype = null;
+        index = 0;
+        format = null;
+        isForAi = false;
+        randomCandidates = new ArrayList<>(candidates);
+    }
+
     public CardEdition getEdition() {
         return CardEdition.UNKNOWN;
     }
@@ -51,12 +65,12 @@ public class ArchetypeDeckGenerator extends DeckProxy implements Comparable<Arch
 
     @Override
     public String getName() {
-        return archetype.getName();
+        return isRandomEntry() ? Localizer.getInstance().getMessage("lblRandom") : archetype.getName();
     }
 
     @Override
     public String toString() {
-        return archetype.getName();
+        return getName();
     }
 
     public Archetype getArchetype() {
@@ -65,11 +79,20 @@ public class ArchetypeDeckGenerator extends DeckProxy implements Comparable<Arch
 
     @Override
     public int compareTo(final ArchetypeDeckGenerator d) {
+        if (isRandomEntry()) {
+            return d.isRandomEntry() ? 0 : -1;
+        }
+        if (d.isRandomEntry()) {
+            return 1;
+        }
         return d.getArchetype().getDeckCount().compareTo(archetype.getDeckCount());
     }
 
     @Override
     public Deck getDeck() {
+        if (isRandomEntry()) {
+            return RandomDeckProxyUtil.getRandomDeck(randomCandidates);
+        }
         return DeckgenUtil.buildLDACArchetypeDeck(archetype,format,isForAi);
     }
 
@@ -79,6 +102,9 @@ public class ArchetypeDeckGenerator extends DeckProxy implements Comparable<Arch
     }
 
     public String getImageKey(boolean altState) {
+        if (isRandomEntry()) {
+            return null;
+        }
 /*        Predicate<PaperCard> cardFilter = Predicates.and(format.getFilterPrinted(),PaperCard.Predicates.name(name));
         List<PaperCard> cards=FModel.getMagicDb().getCommonCards().getAllCards(cardFilter);
         return cards.get(cards.size()-1).getImageKey(altState);*/
@@ -87,5 +113,9 @@ public class ArchetypeDeckGenerator extends DeckProxy implements Comparable<Arch
 
     public PaperCard getPaperCard(){
         return card;
+    }
+
+    private boolean isRandomEntry() {
+        return randomCandidates != null;
     }
 }

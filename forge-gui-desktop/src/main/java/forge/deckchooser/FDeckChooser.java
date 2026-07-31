@@ -193,7 +193,7 @@ public class FDeckChooser extends JPanel implements IDecksComboBoxListener {
         }
 
         lstDecks.setAllowMultipleSelections(false);
-        setDeckPoolWithConfig(CommanderDeckGenerator.getCommanderDecks(deckFormat, isAi, false), ItemManagerConfig.STRING_ONLY);
+        setDeckPoolWithConfig(CommanderDeckGenerator.getCommanderDecks(deckFormat, isAi, false, true), ItemManagerConfig.STRING_ONLY);
 
         btnRandom.setText("Random");
         btnRandom.setCommand((UiCommand) () -> DeckgenUtil.randomSelect(lstDecks));
@@ -209,7 +209,7 @@ public class FDeckChooser extends JPanel implements IDecksComboBoxListener {
         }
 
         lstDecks.setAllowMultipleSelections(false);
-        setDeckPoolWithConfig(CommanderDeckGenerator.getCommanderDecks(deckFormat, isAi, true), ItemManagerConfig.STRING_ONLY);
+        setDeckPoolWithConfig(CommanderDeckGenerator.getCommanderDecks(deckFormat, isAi, true, true), ItemManagerConfig.STRING_ONLY);
 
         btnRandom.setText("Random");
         btnRandom.setCommand((UiCommand) () -> DeckgenUtil.randomSelect(lstDecks));
@@ -219,7 +219,7 @@ public class FDeckChooser extends JPanel implements IDecksComboBoxListener {
     }
 
     private void updateThemes() {
-        updateDecks(DeckProxy.getAllThemeDecks(), ItemManagerConfig.STRING_ONLY);
+        updateDecks(DeckProxy.getAllThemeDecks(true), ItemManagerConfig.STRING_ONLY);
     }
 
     private void updatePrecons() {

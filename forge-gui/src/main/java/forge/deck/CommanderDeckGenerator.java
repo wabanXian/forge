@@ -8,8 +8,10 @@ import forge.item.PaperCard;
 import forge.item.PaperCardPredicates;
 import forge.model.FModel;
 import forge.util.ItemPool;
+import forge.util.Localizer;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +23,12 @@ import java.util.stream.Collectors;
  */
 public class CommanderDeckGenerator extends DeckProxy implements Comparable<CommanderDeckGenerator> {
     public static List<DeckProxy> getCommanderDecks(final DeckFormat format, boolean isForAi, boolean isCardGen){
+        return getCommanderDecks(format, isForAi, isCardGen, false);
+    }
+
+    public static List<DeckProxy> getCommanderDecks(final DeckFormat format, boolean isForAi, boolean isCardGen, boolean includeRandom){
         if (format.equals(DeckFormat.Brawl)){
-            return getBrawlDecks(format, isForAi, isCardGen);
+            return getBrawlDecks(format, isForAi, isCardGen, includeRandom);
         }
         ItemPool<PaperCard> uniqueCards;
         if (isCardGen){
@@ -40,14 +46,22 @@ public class CommanderDeckGenerator extends DeckProxy implements Comparable<Comm
             uniqueCards = ItemPool.createFrom(FModel.getMagicDb().getCommonCards().getUniqueCards(), PaperCard.class);
         }
         Predicate<CardRules> canPlay = isForAi ? DeckGeneratorBase.AI_CAN_PLAY : CardRulesPredicates.IS_KEPT_IN_RANDOM_DECKS;
-        return uniqueCards.toFlatList().stream()
+        final List<DeckProxy> decks = uniqueCards.toFlatList().stream()
                 .filter(format.isLegalCommanderPredicate())
                 .filter(PaperCardPredicates.fromRules(canPlay))
                 .map(legend -> new CommanderDeckGenerator(legend, format, isForAi, isCardGen))
                 .collect(Collectors.toList());
+        if (includeRandom) {
+            addRandomEntry(decks);
+        }
+        return decks;
     }
 
     public static List<DeckProxy> getBrawlDecks(final DeckFormat format, boolean isForAi, boolean isCardGen){
+        return getBrawlDecks(format, isForAi, isCardGen, false);
+    }
+
+    public static List<DeckProxy> getBrawlDecks(final DeckFormat format, boolean isForAi, boolean isCardGen, boolean includeRandom){
         ItemPool<PaperCard> uniqueCards;
         if (isCardGen){
             uniqueCards = new ItemPool<>(PaperCard.class);
@@ -65,11 +79,21 @@ public class CommanderDeckGenerator extends DeckProxy implements Comparable<Comm
             uniqueCards = ItemPool.createFrom(FModel.getMagicDb().getCommonCards().getUniqueCards(), PaperCard.class);
         }
         Predicate<CardRules> canPlay = isForAi ? DeckGeneratorBase.AI_CAN_PLAY : CardRulesPredicates.IS_KEPT_IN_RANDOM_DECKS;
-        return uniqueCards.toFlatList().stream()
+        final List<DeckProxy> decks = uniqueCards.toFlatList().stream()
                 .filter(format.isLegalCardPredicate())
                 .filter(PaperCardPredicates.fromRules(CardRulesPredicates.CAN_BE_BRAWL_COMMANDER.and(canPlay)))
                 .map(legend -> new CommanderDeckGenerator(legend, format, isForAi, isCardGen))
                 .collect(Collectors.toList());
+        if (includeRandom) {
+            addRandomEntry(decks);
+        }
+        return decks;
+    }
+
+    private static void addRandomEntry(final List<DeckProxy> decks) {
+        if (!decks.isEmpty()) {
+            decks.add(0, new CommanderDeckGenerator(decks));
+        }
     }
 
     private final PaperCard legend;
@@ -77,6 +101,7 @@ public class CommanderDeckGenerator extends DeckProxy implements Comparable<Comm
     private final DeckFormat format;
     private final boolean isForAi;
     private final boolean isCardgen;
+    private final List<DeckProxy> randomCandidates;
 
     private CommanderDeckGenerator(PaperCard legend0, DeckFormat format0, boolean isForAi0, boolean isCardgen0) {
         super();
@@ -85,6 +110,17 @@ public class CommanderDeckGenerator extends DeckProxy implements Comparable<Comm
         isForAi=isForAi0;
         format=format0;
         isCardgen=isCardgen0;
+        randomCandidates = null;
+    }
+
+    private CommanderDeckGenerator(final List<DeckProxy> candidates) {
+        super();
+        legend = null;
+        index = 0;
+        isForAi = false;
+        format = null;
+        isCardgen = false;
+        randomCandidates = new ArrayList<>(candidates);
     }
 
     public CardEdition getEdition() {
@@ -93,21 +129,30 @@ public class CommanderDeckGenerator extends DeckProxy implements Comparable<Comm
 
     @Override
     public String getName() {
-        return legend.getName();
+        return isRandomEntry() ? Localizer.getInstance().getMessage("lblRandom") : legend.getName();
     }
 
     @Override
     public String toString() {
-        return legend.getName();
+        return getName();
     }
 
     @Override
     public int compareTo(final CommanderDeckGenerator d) {
+        if (isRandomEntry()) {
+            return d.isRandomEntry() ? 0 : -1;
+        }
+        if (d.isRandomEntry()) {
+            return 1;
+        }
         return this.getName().compareTo(d.getName());
     }
 
     @Override
     public Deck getDeck() {
+        if (isRandomEntry()) {
+            return RandomDeckProxyUtil.getRandomDeck(randomCandidates);
+        }
         return DeckgenUtil.generateRandomCommanderDeck(legend, format, isForAi, isCardgen);
     }
 
@@ -117,10 +162,14 @@ public class CommanderDeckGenerator extends DeckProxy implements Comparable<Comm
     }
 
     public String getImageKey(boolean altState) {
-        return legend.getImageKey(altState);
+        return isRandomEntry() ? null : legend.getImageKey(altState);
     }
 
     public PaperCard getPaperCard(){
         return legend;
+    }
+
+    private boolean isRandomEntry() {
+        return randomCandidates != null;
     }
 }

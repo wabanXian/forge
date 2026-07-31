@@ -928,13 +928,13 @@ public class FDeckChooser extends FScreen {
             config = ItemManagerConfig.COMMANDER_DECKS;
             break;
         case RANDOM_COMMANDER_DECK:
-            pool = CommanderDeckGenerator.getCommanderDecks(lstDecks.getGameType().getDeckFormat(),isAi, false);
+            pool = CommanderDeckGenerator.getCommanderDecks(lstDecks.getGameType().getDeckFormat(),isAi, false, true);
             config = ItemManagerConfig.STRING_ONLY;
             break;
         case RANDOM_CARDGEN_COMMANDER_DECK:
             pool= new ArrayList<>();
             if(FModel.isdeckGenMatrixLoaded()) {
-                pool = CommanderDeckGenerator.getCommanderDecks(lstDecks.getGameType().getDeckFormat(), isAi, true);
+                pool = CommanderDeckGenerator.getCommanderDecks(lstDecks.getGameType().getDeckFormat(), isAi, true, true);
             }
             config = ItemManagerConfig.STRING_ONLY;
             break;
@@ -1035,7 +1035,7 @@ public class FDeckChooser extends FScreen {
             config = ItemManagerConfig.STRING_ONLY;
             break;
         case THEME_DECK:
-            pool = DeckProxy.getAllThemeDecks();
+            pool = DeckProxy.getAllThemeDecks(true);
             config = ItemManagerConfig.STRING_ONLY;
             break;
         case QUEST_OPPONENT_DECK:

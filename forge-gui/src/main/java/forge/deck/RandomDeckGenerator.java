@@ -9,12 +9,14 @@ import forge.localinstance.properties.ForgePreferences;
 import forge.model.FModel;
 import forge.util.Aggregates;
 import forge.util.IterableUtil;
+import forge.util.Localizer;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class RandomDeckGenerator extends DeckProxy implements Comparable<RandomDeckGenerator> {
     private enum RandomDeckType {
+        Random,
         Generated,
         User,
         Favorite
@@ -26,6 +28,7 @@ public class RandomDeckGenerator extends DeckProxy implements Comparable<RandomD
         decks.add(new RandomDeckGenerator("Random Generated Deck", RandomDeckType.Generated, lstDecks0, isAi0));
         decks.add(new RandomDeckGenerator("Random User Deck", RandomDeckType.User, lstDecks0, isAi0));
         decks.add(new RandomDeckGenerator("Random Favorite Deck", RandomDeckType.Favorite, lstDecks0, isAi0));
+        decks.add(0, new RandomDeckGenerator(decks));
 
         return decks;
     }
@@ -39,6 +42,7 @@ public class RandomDeckGenerator extends DeckProxy implements Comparable<RandomD
     private final RandomDeckType type;
     private final IHasGameType lstDecks;
     private final boolean isAi;
+    private final List<DeckProxy> randomCandidates;
 
     private RandomDeckGenerator(final String name0, final RandomDeckType type0, final IHasGameType lstDecks0, final boolean isAi0) {
         super();
@@ -46,6 +50,16 @@ public class RandomDeckGenerator extends DeckProxy implements Comparable<RandomD
         type = type0;
         lstDecks = lstDecks0;
         isAi = isAi0;
+        randomCandidates = null;
+    }
+
+    private RandomDeckGenerator(final List<DeckProxy> candidates) {
+        super();
+        name = Localizer.getInstance().getMessage("lblRandom");
+        type = RandomDeckType.Random;
+        lstDecks = null;
+        isAi = false;
+        randomCandidates = new ArrayList<>(candidates);
     }
 
     @Override
@@ -66,6 +80,8 @@ public class RandomDeckGenerator extends DeckProxy implements Comparable<RandomD
     @Override
     public Deck getDeck() {
         switch (type) {
+            case Random:
+                return RandomDeckProxyUtil.getRandomDeck(randomCandidates);
             case Generated:
                 return getGeneratedDeck();
             case User:

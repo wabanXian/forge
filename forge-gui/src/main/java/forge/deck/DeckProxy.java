@@ -18,6 +18,7 @@ import forge.model.FModel;
 import forge.util.BinaryUtil;
 import forge.util.IHasName;
 import forge.util.IterableUtil;
+import forge.util.Localizer;
 import forge.util.storage.IStorage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -587,15 +588,27 @@ public class DeckProxy implements InventoryItem {
         }
     }
 
-    private static class ThemeDeckGenerator extends DeckProxy {
+    private static class ThemeDeckGenerator extends DeckProxy implements Comparable<ThemeDeckGenerator> {
         private final String name;
+        private final List<DeckProxy> randomCandidates;
+
         public ThemeDeckGenerator(final String name0) {
             super();
             name = name0;
+            randomCandidates = null;
+        }
+
+        private ThemeDeckGenerator(final List<DeckProxy> candidates) {
+            super();
+            name = Localizer.getInstance().getMessage("lblRandom");
+            randomCandidates = new ArrayList<>(candidates);
         }
 
         @Override
         public Deck getDeck() {
+            if (randomCandidates != null) {
+                return RandomDeckProxyUtil.getRandomDeck(randomCandidates);
+            }
             final DeckGeneratorTheme gen = new DeckGeneratorTheme(FModel.getMagicDb().getCommonCards());
             gen.setSingleton(FModel.getPreferences().getPrefBoolean(FPref.DECKGEN_SINGLETONS));
             gen.setUseArtifacts(!FModel.getPreferences().getPrefBoolean(FPref.DECKGEN_ARTIFACTS));
@@ -622,12 +635,30 @@ public class DeckProxy implements InventoryItem {
         public boolean isGeneratedDeck() {
             return true;
         }
+
+        @Override
+        public int compareTo(final ThemeDeckGenerator other) {
+            if (randomCandidates != null) {
+                return other.randomCandidates != null ? 0 : -1;
+            }
+            if (other.randomCandidates != null) {
+                return 1;
+            }
+            return name.compareTo(other.name);
+        }
     }
 
     public static List<DeckProxy> getAllThemeDecks() {
+        return getAllThemeDecks(false);
+    }
+
+    public static List<DeckProxy> getAllThemeDecks(final boolean includeRandom) {
         final List<DeckProxy> decks = new ArrayList<>();
         for (final String s : DeckGeneratorTheme.getThemeNames()) {
             decks.add(new ThemeDeckGenerator(s));
+        }
+        if (includeRandom && !decks.isEmpty()) {
+            decks.add(0, new ThemeDeckGenerator(decks));
         }
         return decks;
     }

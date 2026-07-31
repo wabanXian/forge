@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import com.google.common.collect.Iterables;
 import forge.Forge;
@@ -210,6 +211,12 @@ public class GuiChoose {
     }
 
     public static <T> void getChoices(final String message, final int min, final int max, final Collection<T> choices, final Collection<T> selected, final FSerializableFunction<T, String> display, final Consumer<List<T>> callback) {
+        getChoices(message, min, max, choices, selected, display, null, callback);
+    }
+
+    public static <T> void getChoices(final String message, final int min, final int max, final Collection<T> choices,
+            final Collection<T> selected, final FSerializableFunction<T, String> display,
+            final Function<T, Iterable<String>> searchKeyProvider, final Consumer<List<T>> callback) {
         if (choices == null || choices.isEmpty()) {
             if (min == 0) {
                 callback.accept(new ArrayList<>());
@@ -218,7 +225,7 @@ public class GuiChoose {
             throw new RuntimeException("choice required from empty list");
         }
 
-        ListChooser<T> c = new ListChooser<>(message, min, max, choices, display, callback);
+        ListChooser<T> c = new ListChooser<>(message, min, max, choices, display, searchKeyProvider, callback);
         c.show(selected, false);
     }
 

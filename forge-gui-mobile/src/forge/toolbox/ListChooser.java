@@ -79,14 +79,22 @@ public class ListChooser<T> extends FContainer {
     private FOptionPane optionPane;
     private final Collection<T> list;
     private final Function<T, String> display;
+    private final Function<T, Iterable<String>> searchKeyProvider;
     private final Consumer<List<T>> callback;
     private AdvancedSearchFilter<? extends InventoryItem> advancedSearchFilter;
 
     public ListChooser(final String title, final int minChoices, final int maxChoices, final Collection<T> list0, final Function<T, String> display0, final Consumer<List<T>> callback0) {
+        this(title, minChoices, maxChoices, list0, display0, null, callback0);
+    }
+
+    public ListChooser(final String title, final int minChoices, final int maxChoices, final Collection<T> list0,
+            final Function<T, String> display0, final Function<T, Iterable<String>> searchKeyProvider0,
+            final Consumer<List<T>> callback0) {
         FThreads.assertExecutedByEdt(true);
         list = list0;
         lstChoices = add(new ChoiceList(list, minChoices, maxChoices));
         display = display0;
+        searchKeyProvider = searchKeyProvider0;
         callback = callback0;
 
         //only show search field if more than 25 items and vertical layout
@@ -162,7 +170,7 @@ public class ListChooser<T> extends FContainer {
 
         final String pattern = normalize(txtSearch.getText());
         if (!pattern.isEmpty()) {
-            predicates.add(input -> normalize(lstChoices.getChoiceText(input)).contains(pattern));
+            predicates.add(input -> matchesSearch(input, pattern));
         }
         if (advancedSearchFilter != null && !advancedSearchFilter.isEmpty()) {
             predicates.add((Predicate<? super T>)advancedSearchFilter.getPredicate());
@@ -183,6 +191,25 @@ public class ListChooser<T> extends FContainer {
 
     private static String normalize(final String s) {
         return StringUtils.stripAccents(s.toLowerCase()).replaceAll("[^a-z0-9 ]", "");
+    }
+
+    private boolean matchesSearch(final T input, final String pattern) {
+        if (normalize(lstChoices.getChoiceText(input)).contains(pattern)) {
+            return true;
+        }
+        if (searchKeyProvider == null) {
+            return false;
+        }
+        final Iterable<String> searchKeys = searchKeyProvider.apply(input);
+        if (searchKeys == null) {
+            return false;
+        }
+        for (final String key : searchKeys) {
+            if (key != null && normalize(key).contains(pattern)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void updateHeight() {

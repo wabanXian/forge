@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.jupnp.DefaultUpnpServiceConfiguration;
 import org.jupnp.UpnpServiceConfiguration;
@@ -204,6 +205,18 @@ public class GuiMobile implements IGuiBase {
             @Override
             public void run() {
                 GuiChoose.getChoices(message, min, max, choices, selected, display, this);
+            }
+        }.invokeAndWait();
+    }
+
+    @Override
+    public <T> List<T> getChoices(final String message, final int min, final int max, final Collection<T> choices,
+            final Collection<T> selected, final FSerializableFunction<T, String> display,
+            final Function<T, Iterable<String>> searchKeyProvider) {
+        return new WaitCallback<List<T>>() {
+            @Override
+            public void run() {
+                GuiChoose.getChoices(message, min, max, choices, selected, display, searchKeyProvider, this);
             }
         }.invokeAndWait();
     }

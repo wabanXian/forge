@@ -105,6 +105,9 @@ public class GauntletUtil {
             default:
                 continue;
             }
+            if (eventNames.size() < decks.size() + 1) {
+                eventNames.add(deck == null ? allowedDeckTypes.get(randType).toString() : deck.getName());
+            }
             decks.add(deck);
         }
 

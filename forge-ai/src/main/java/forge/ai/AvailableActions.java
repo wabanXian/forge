@@ -107,7 +107,7 @@ public final class AvailableActions {
         if (sa.getPayCosts() == null || !sa.getPayCosts().hasManaCost()) {
             return true;
         }
-        return ComputerUtilMana.canPayManaCost(sa, player, 0, false);
+        return ComputerUtilMana.canPayManaCostForHumanActionPrediction(sa, player, 0, false);
     }
 
     private static boolean checkTimeout(long deadlineNanos, long timeoutMs) {

@@ -59,8 +59,15 @@ public class ComputerUtilMana {
     public static boolean canPayManaCost(final SpellAbility sa, final Player ai, final int extraMana, final boolean effect) {
         return canPayManaCost(sa.getPayCosts(), sa, ai, extraMana, effect);
     }
+    public static boolean canPayManaCostForHumanActionPrediction(final SpellAbility sa, final Player ai, final int extraMana, final boolean effect) {
+        return canPayManaCost(sa.getPayCosts(), sa, ai, extraMana, effect, false);
+    }
     public static boolean canPayManaCost(final Cost cost, final SpellAbility sa, final Player ai, final int extraMana, final boolean effect) {
-        return payManaCost(cost, sa, ai, true, extraMana, true, effect);
+        return canPayManaCost(cost, sa, ai, extraMana, effect, true);
+    }
+    private static boolean canPayManaCost(final Cost cost, final SpellAbility sa, final Player ai, final int extraMana,
+            final boolean effect, final boolean applyAiManaLogic) {
+        return payManaCost(cost, sa, ai, true, extraMana, true, effect, applyAiManaLogic);
     }
 
     public static boolean payManaCost(ManaCostBeingPaid cost, final SpellAbility sa, final Player ai, final boolean effect) {
@@ -73,8 +80,12 @@ public class ComputerUtilMana {
         return payManaCost(cost, sa, ai, false, 0, true, effect);
     }
     private static boolean payManaCost(final Cost cost, final SpellAbility sa, final Player ai, final boolean test, final int extraMana, boolean checkPlayable, final boolean effect) {
+        return payManaCost(cost, sa, ai, test, extraMana, checkPlayable, effect, true);
+    }
+    private static boolean payManaCost(final Cost cost, final SpellAbility sa, final Player ai, final boolean test,
+            final int extraMana, boolean checkPlayable, final boolean effect, final boolean applyAiManaLogic) {
         ManaCostBeingPaid manaCost = calculateManaCost(cost, sa, ai, test, extraMana, effect);
-        return payManaCost(manaCost, sa, ai, test, checkPlayable, effect) != null;
+        return payManaCost(manaCost, sa, ai, test, checkPlayable, effect, applyAiManaLogic) != null;
     }
 
     /**

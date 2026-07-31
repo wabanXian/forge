@@ -316,6 +316,9 @@ public class Controls {
         SelectBox<String> ret = newComboBox();
         ret.getStyle().listStyle.selection.setTopHeight(4);
         ret.setItems(text);
+        if (item != null) {
+            ret.setSelected(item);
+        }
         ret.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
@@ -326,9 +329,7 @@ public class Controls {
                 }
             }
         });
-        func.apply(item);
         ret.getList().setAlignment(Align.center);
-        ret.setSelected(item);
         ret.setAlignment(Align.right);
         return ret;
     }
@@ -337,6 +338,9 @@ public class Controls {
         SelectBox<String> ret = newComboBox();
         ret.getStyle().listStyle.selection.setTopHeight(4);
         ret.setItems(text);
+        if (item != null) {
+            ret.setSelected(item);
+        }
         ret.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
@@ -347,9 +351,7 @@ public class Controls {
                 }
             }
         });
-        func.apply(item);
         ret.getList().setAlignment(Align.center);
-        ret.setSelected(item);
         ret.setAlignment(Align.right);
         return ret;
     }
@@ -383,6 +385,7 @@ public class Controls {
         SelectBox<Float> ret = newComboBox();
         ret.getStyle().listStyle.selection.setTopHeight(4);
         ret.setItems(text);
+        ret.setSelected(item);
         ret.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
@@ -393,9 +396,7 @@ public class Controls {
                 }
             }
         });
-        func.apply(item);
         ret.getList().setAlignment(Align.center);
-        ret.setSelected(item);
         ret.setAlignment(Align.right);
         return ret;
     }
@@ -404,6 +405,7 @@ public class Controls {
         SelectBox<Integer> ret = newComboBox();
         ret.getStyle().listStyle.selection.setTopHeight(4);
         ret.setItems(text);
+        ret.setSelected(item);
         ret.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
@@ -414,9 +416,7 @@ public class Controls {
                 }
             }
         });
-        func.apply(item);
         ret.getList().setAlignment(Align.center);
-        ret.setSelected(item);
         ret.setAlignment(Align.right);
         return ret;
     }

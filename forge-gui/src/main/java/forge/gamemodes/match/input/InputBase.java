@@ -25,6 +25,7 @@ import forge.game.player.Player;
 import forge.game.player.PlayerView;
 import forge.game.spellability.SpellAbility;
 import forge.game.spellability.SpellAbilityView;
+import forge.game.zone.ZoneType;
 import forge.localinstance.properties.ForgePreferences;
 import forge.model.FModel;
 import forge.player.PlayerControllerHuman;
@@ -43,6 +44,7 @@ import java.util.List;
  */
 public abstract class InputBase implements java.io.Serializable, Input {
     private static final long serialVersionUID = -2531867688249685076L;
+    private static final String YUNA_GRAND_SUMMONER = "Yuna, Grand Summoner";
 
     private final PlayerControllerHuman controller;
     public InputBase(final PlayerControllerHuman controller0) {
@@ -157,6 +159,10 @@ public abstract class InputBase implements java.io.Serializable, Input {
                 sb.append("\n").append(localizer.getMessage("lblStormCount")).append(": ").append(stormCount);
             }
         }
+        final int yunaGrandSummonCount = getYunaGrandSummonCount();
+        if (yunaGrandSummonCount > 0) {
+            sb.append("\nGrand Summon (Yuna): ").append(yunaGrandSummonCount);
+        }
 
         if (controller.macros() != null) {
             boolean isRecording = controller.macros().isRecording();
@@ -176,5 +182,21 @@ public abstract class InputBase implements java.io.Serializable, Input {
         }
 
         return sb.toString();
+    }
+
+    private int getYunaGrandSummonCount() {
+        final Player player = controller.getPlayer();
+        if (player == null) {
+            return 0;
+        }
+
+        int count = 0;
+        for (final Card effect : player.getCardsIn(ZoneType.Command)) {
+            final Card source = effect.getEffectSource();
+            if (source != null && YUNA_GRAND_SUMMONER.equals(source.getName())) {
+                count++;
+            }
+        }
+        return count;
     }
 }

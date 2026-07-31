@@ -169,7 +169,7 @@ public class DeckController<T extends DeckBase> {
         CardPool catalogClone = new CardPool(catalog); // clone to iterate modified collection
         for (Map.Entry<PaperCard, Integer> entry : catalogClone) {
             PaperCard availableCard = entry.getKey();
-            if (availableCard.getRules().getType().isBasicLand())  // basic lands are added regardless of catalog cards
+            if (availableCard.isVeryBasicLand())  // regular basic lands are added regardless of catalog cards
                 continue;
             Integer availableCount = entry.getValue();
             int toAddByName = countByName.getOrDefault(availableCard.getName(), 0);
@@ -198,7 +198,7 @@ public class DeckController<T extends DeckBase> {
 
     private HashMap<String, PaperCard> getBasicLandsByName(CardPool sourceSection) {
         HashMap<String, PaperCard> result = new HashMap<>();
-        StreamUtil.stream(sourceSection).filter(pc -> pc.getKey().getRules().getType().isBasicLand())
+        StreamUtil.stream(sourceSection).filter(pc -> pc.getKey().isVeryBasicLand())
                 .forEach(pc -> result.putIfAbsent(pc.getKey().getName(), pc.getKey()));
         return result;
     }

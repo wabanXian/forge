@@ -17,7 +17,9 @@
  */
 package forge.view.arcane;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Composite;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontFormatException;
@@ -48,6 +50,8 @@ import com.google.common.collect.Multiset;
 
 import forge.CachedCardImage;
 import forge.StaticData;
+import forge.card.ColorSet;
+import forge.card.MagicColor;
 import forge.card.CardEdition;
 import forge.card.CardStateName;
 import forge.card.mana.ManaCost;
@@ -458,6 +462,9 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
         if (hotkeyDigit > 0 && cardWidth >= HOTKEY_BADGE_MIN_CARD_WIDTH) {
             drawHotkeyDigitBadge(g);
         }
+        if (canShow) {
+            drawChosenColorIcons(g);
+        }
         if (zoneBannerText != null) {
             drawZoneBanner(g);
         }
@@ -632,6 +639,48 @@ public class CardPanel extends SkinnedPanel implements CardContainer, IDisposabl
         } finally {
             g2d.dispose();
         }
+    }
+
+    private void drawChosenColorIcons(final Graphics g) {
+        if (card.getChosenColors() == null || card.getChosenColors().isEmpty()) {
+            return;
+        }
+
+        final ColorSet chosenColors = ColorSet.fromNames(card.getChosenColors());
+        if (chosenColors.isColorless()) {
+            return;
+        }
+
+        final Graphics2D g2d = (Graphics2D) g;
+        final Composite oldComposite = g2d.getComposite();
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.55f));
+
+        final List<MagicColor.Color> colors = new ArrayList<>();
+        for (final MagicColor.Color color : chosenColors.getOrderedColors()) {
+            if (color != MagicColor.Color.COLORLESS) {
+                colors.add(color);
+            }
+        }
+        if (colors.isEmpty()) {
+            g2d.setComposite(oldComposite);
+            return;
+        }
+
+        final int iconSize = Math.max(10, Math.min(cardWidth / 8, cardHeight / 12));
+        final int gap = Math.max(1, iconSize / 8);
+        final int margin = Math.max(3, cardWidth / 40);
+        final int x = cardXOffset + cardWidth - iconSize - margin;
+        final int totalHeight = colors.size() * iconSize + (colors.size() - 1) * gap;
+        final int centerY = cardYOffset + Math.round(cardHeight * 0.45f);
+        final int minY = cardYOffset + margin;
+        final int maxY = cardYOffset + cardHeight - totalHeight - margin;
+        int y = Math.max(minY, Math.min(centerY - totalHeight / 2, maxY));
+
+        for (final MagicColor.Color color : colors) {
+            CardFaceSymbols.drawSymbol(color.getShortName(), g, x, y, iconSize);
+            y += iconSize + gap;
+        }
+        g2d.setComposite(oldComposite);
     }
 
     public boolean isBadgeHit(int mouseX, int mouseY) {

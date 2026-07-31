@@ -48,9 +48,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Vector;
+import java.util.concurrent.ThreadLocalRandom;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
@@ -1126,6 +1128,7 @@ public class FSkin {
     private static int currentSkinIndex;
     private static String preferredDir;
     private static String preferredName;
+    private static final String MATCH_BACKGROUND_DIR = "bg_match";
     private static BufferedImage bimDefaultSprite, bimFavIcon, bimPreferredSprite, bimFoils, bimQuestDraftDeck, bimOldFoils,
     bimDefaultAvatars, bimPreferredAvatars, bimTrophies, bimAbilities, bimManaIcons, bimPhyrexian, bimColorlessHybrid, bimDefaultSleeve,
             bimDefaultSleeve2, bimDefaultDeckbox, bimPrefferedSetLogo, bimDefaultWatermark, bimDefaultDraftRank, bimAttractionLights,
@@ -1215,6 +1218,32 @@ public class FSkin {
                 e.printStackTrace();
             }
             loaded = true;
+        }
+    }
+
+    private static String getSkinBackgroundFile(final String filename) {
+        final File preferredFile = new File(preferredDir + filename);
+        if (preferredFile.exists()) {
+            return preferredFile.getPath();
+        }
+        return ForgeConstants.DEFAULT_SKINS_DIR + filename;
+    }
+
+    private static boolean isSupportedMatchBackground(final File file) {
+        if (!file.isFile()) {
+            return false;
+        }
+        final String name = file.getName().toLowerCase(Locale.ROOT);
+        return name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png");
+    }
+
+    public static void selectMatchBackgroundForNewMatch() {
+        final File matchBackgroundDir = new File(preferredDir + MATCH_BACKGROUND_DIR);
+        final File[] candidates = matchBackgroundDir.isDirectory() ? matchBackgroundDir.listFiles(FSkin::isSupportedMatchBackground) : null;
+        if (candidates != null && candidates.length > 0) {
+            SkinIcon.setIcon(FSkinProp.BG_MATCH, candidates[ThreadLocalRandom.current().nextInt(candidates.length)].getPath());
+        } else {
+            SkinIcon.setIcon(FSkinProp.BG_MATCH, getSkinBackgroundFile(ForgeConstants.MATCH_BG_FILE));
         }
     }
 
@@ -1339,10 +1368,10 @@ public class FSkin {
         // Put various images into map (except sprite and splash).
         // Exceptions handled inside method.
         SkinIcon.setIcon(FSkinProp.BG_TEXTURE, preferredDir + ForgeConstants.TEXTURE_BG_FILE);
-        SkinIcon.setIcon(FSkinProp.BG_MATCH, preferredDir + ForgeConstants.MATCH_BG_FILE);
+        selectMatchBackgroundForNewMatch();
         //daynight bg
-        SkinIcon.setIcon(FSkinProp.BG_DAY, defaultDir + ForgeConstants.MATCH_BG_DAY_FILE);
-        SkinIcon.setIcon(FSkinProp.BG_NIGHT, defaultDir + ForgeConstants.MATCH_BG_NIGHT_FILE);
+        SkinIcon.setIcon(FSkinProp.BG_DAY, getSkinBackgroundFile(ForgeConstants.MATCH_BG_DAY_FILE));
+        SkinIcon.setIcon(FSkinProp.BG_NIGHT, getSkinBackgroundFile(ForgeConstants.MATCH_BG_NIGHT_FILE));
 
         // Run through enums and load their coords.
         Colors.updateAll();

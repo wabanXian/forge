@@ -1232,6 +1232,9 @@ public final class CMatchUI
 
         SOverlayUtils.hideOverlay();
         //reset every match
+        if (gameView.getMatch().getOutcomes().isEmpty()) {
+            FSkin.selectMatchBackgroundForNewMatch();
+        }
         getScreen().setDaytime(null);
         if (FModel.getPreferences().getPrefBoolean(FPref.UI_MATCH_IMAGE_VISIBLE))
             FView.SINGLETON_INSTANCE.getPnlInsets().setForegroundImage(FSkin.getIcon(FSkinProp.BG_MATCH), true);

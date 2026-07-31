@@ -23,6 +23,7 @@ import forge.LobbyPlayer;
 import forge.assets.FImage;
 import forge.assets.FSkin;
 import forge.assets.FSkinImage;
+import forge.assets.FSkinTexture;
 import forge.assets.FTextureRegionImage;
 import forge.assets.ImageCache;
 import forge.card.CardAvatarImage;
@@ -223,6 +224,9 @@ public class MatchController extends NetworkGuiGame {
                 if (playerPanel.equals(playerPanels.get(0)))
                     playerPanel.setBottomPlayer(true);
             }
+        }
+        if (getGameView().getMatch().getOutcomes().isEmpty()) {
+            FSkinTexture.selectMatchBackgroundForNewMatch();
         }
         view = new MatchScreen(playerPanels);
         if(GuiBase.isNetPlay(this))

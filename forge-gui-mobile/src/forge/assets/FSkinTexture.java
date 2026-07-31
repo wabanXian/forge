@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Random;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
@@ -91,6 +93,9 @@ public enum FSkinTexture implements FImage {
     private Texture texture;
     private final boolean isPlanechaseBG;
     private static List<String> planechaseString;
+    private static final String MATCH_BACKGROUND_DIR = "bg_match";
+    private static final Random MATCH_BACKGROUND_RANDOM = new Random();
+    private static FileHandle currentMatchBackgroundFile;
     private boolean isloaded = false;
     private boolean hasError = false;
 
@@ -126,6 +131,38 @@ public enum FSkinTexture implements FImage {
 
     private boolean isAdventureBackground() {
         return ADVENTURE_BACKGROUNDS.contains(this);
+    }
+
+    private static boolean isSupportedMatchBackground(final FileHandle file) {
+        if (file.isDirectory()) {
+            return false;
+        }
+        final String name = file.name().toLowerCase(Locale.ROOT);
+        return name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png");
+    }
+
+    public static void selectMatchBackgroundForNewMatch() {
+        final List<FileHandle> candidates = new ArrayList<>();
+        final FileHandle matchBackgroundDir = FSkin.getSkinDir().child(MATCH_BACKGROUND_DIR);
+        if (matchBackgroundDir.exists() && matchBackgroundDir.isDirectory()) {
+            for (final FileHandle file : matchBackgroundDir.list()) {
+                if (isSupportedMatchBackground(file)) {
+                    candidates.add(file);
+                }
+            }
+        }
+
+        if (!candidates.isEmpty()) {
+            currentMatchBackgroundFile = candidates.get(MATCH_BACKGROUND_RANDOM.nextInt(candidates.size()));
+        } else {
+            currentMatchBackgroundFile = FSkin.getSkinFile(ForgeConstants.MATCH_BG_FILE);
+            if (!currentMatchBackgroundFile.exists()) {
+                currentMatchBackgroundFile = FSkin.getDefaultSkinFile(ForgeConstants.MATCH_BG_FILE);
+            }
+        }
+        BG_MATCH.texture = null;
+        BG_MATCH.isloaded = false;
+        BG_MATCH.hasError = false;
     }
 
     public static void invalidateAdventureTextures() {
@@ -168,7 +205,9 @@ public enum FSkinTexture implements FImage {
         }
 
         FileHandle preferredFile;
-        if (isPlanechaseBG) {
+        if (this == BG_MATCH && currentMatchBackgroundFile != null) {
+            preferredFile = currentMatchBackgroundFile;
+        } else if (isPlanechaseBG) {
             preferredFile = FSkin.getCachePlanechaseFile(filename);
         } else if (isAdventureBackground()) {
             // For adventure backgrounds, check adventure directories first

@@ -121,7 +121,7 @@ public final class CEditorConstructed extends CDeckEditor<Deck> {
                 allSections.add(DeckSection.Commander);
 
                 commanderPool = FModel.getBrawlCommander();
-                normalPool = ItemPool.createFrom(FModel.getFormats().get("Brawl").getAllCards(), PaperCard.class);
+                normalPool = ItemPool.createFrom(FModel.getEffectiveBrawlFormat().getAllCards(), PaperCard.class);
 
                 wantUnique = true;
                 break;

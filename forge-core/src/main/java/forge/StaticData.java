@@ -41,6 +41,8 @@ public class StaticData {
     private Predicate<PaperCard> modernPredicate;
     private Predicate<PaperCard> commanderPredicate;
     private Predicate<PaperCard> oathbreakerPredicate;
+    private boolean useHistoricBrawlOverride;
+    private boolean useDuelCommanderOverride;
 
     private boolean filteredHandsEnabled = false;
 
@@ -427,6 +429,10 @@ public class StaticData {
 
     public void setBrawlPredicate(Predicate<PaperCard> brawlPredicate) { this.brawlPredicate = brawlPredicate; }
 
+    public void setUseHistoricBrawlOverride(boolean useHistoricBrawlOverride) { this.useHistoricBrawlOverride = useHistoricBrawlOverride; }
+
+    public void setUseDuelCommanderOverride(boolean useDuelCommanderOverride) { this.useDuelCommanderOverride = useDuelCommanderOverride; }
+
     public Predicate<PaperCard> getStandardPredicate() { return standardPredicate; }
 
     public Predicate<PaperCard> getPioneerPredicate() { return pioneerPredicate; }
@@ -438,6 +444,10 @@ public class StaticData {
     public Predicate<PaperCard> getOathbreakerPredicate() { return oathbreakerPredicate; }
 
     public Predicate<PaperCard> getBrawlPredicate() { return brawlPredicate; }
+
+    public boolean isUseHistoricBrawlOverride() { return useHistoricBrawlOverride; }
+
+    public boolean isUseDuelCommanderOverride() { return useDuelCommanderOverride; }
 
     /**
      * Get an alternative card print for the given card wrt. the input setReleaseDate.

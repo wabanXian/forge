@@ -53,6 +53,7 @@ import forge.itemmanager.ItemManagerConfig;
 import forge.localinstance.achievements.*;
 import forge.localinstance.properties.ForgeConstants;
 import forge.localinstance.properties.ForgeNetPreferences;
+import forge.localinstance.properties.ForgeProfileProperties;
 import forge.localinstance.properties.ForgePreferences;
 import forge.localinstance.properties.ForgePreferences.FPref;
 import forge.player.GamePlayerUtil;
@@ -133,7 +134,7 @@ public final class FModel {
     private static final Supplier<ItemPool<PaperCard>> allCards = Suppliers.memoize(() -> ItemPool.createFrom(getMagicDb().getCommonCards().getAllCards(), PaperCard.class));
     private static final Supplier<ItemPool<PaperCard>> planechaseCards = Suppliers.memoize(() -> ItemPool.createFrom(getMagicDb().getVariantCards().getAllCards(PaperCardPredicates.fromRules(CardRulesPredicates.IS_PLANE_OR_PHENOMENON)), PaperCard.class));
     private static final Supplier<ItemPool<PaperCard>> archenemyCards = Suppliers.memoize(() -> ItemPool.createFrom(getMagicDb().getVariantCards().getAllCards(PaperCardPredicates.fromRules(CardRulesPredicates.IS_SCHEME)), PaperCard.class));
-    private static final Supplier<ItemPool<PaperCard>> brawlCommander = Suppliers.memoize(() -> ItemPool.createFrom(getMagicDb().getCommonCards().getAllCards(getFormats().get("Brawl").getFilterPrinted().and(PaperCardPredicates.fromRules(CardRulesPredicates.CAN_BE_BRAWL_COMMANDER))), PaperCard.class));
+    private static final Supplier<ItemPool<PaperCard>> brawlCommander = Suppliers.memoize(() -> ItemPool.createFrom(getMagicDb().getCommonCards().getAllCards(getEffectiveBrawlFormat().getFilterPrinted().and(PaperCardPredicates.fromRules(CardRulesPredicates.CAN_BE_BRAWL_COMMANDER))), PaperCard.class));
     private static final Supplier<ItemPool<PaperCard>> oathbreakerCommander = Suppliers.memoize(() -> ItemPool.createFrom(getMagicDb().getCommonCards().getAllCards(PaperCardPredicates.fromRules(CardRulesPredicates.CAN_BE_OATHBREAKER.or(CardRulesPredicates.CAN_BE_SIGNATURE_SPELL))), PaperCard.class));
     private static final Supplier<ItemPool<PaperCard>> tinyLeadersCommander = Suppliers.memoize(() -> ItemPool.createFrom(getMagicDb().getCommonCards().getAllCards(PaperCardPredicates.fromRules(CardRulesPredicates.CAN_BE_TINY_LEADERS_COMMANDER)), PaperCard.class));
     private static final Supplier<ItemPool<PaperCard>> commanderPool = Suppliers.memoize(() -> ItemPool.createFrom(getMagicDb().getCommonCards().getAllCards(PaperCardPredicates.CAN_BE_COMMANDER), PaperCard.class));
@@ -231,9 +232,11 @@ public final class FModel {
         getMagicDb().setStandardPredicate(getFormats().getStandard().getFilterRules());
         getMagicDb().setPioneerPredicate(getFormats().getPioneer().getFilterRules());
         getMagicDb().setModernPredicate(getFormats().getModern().getFilterRules());
-        getMagicDb().setCommanderPredicate(getFormats().get("Commander").getFilterRules());
+        getMagicDb().setUseDuelCommanderOverride(ForgeProfileProperties.isUseDuelCommanderOverride());
+        getMagicDb().setCommanderPredicate(getEffectiveCommanderFormat().getFilterRules());
         getMagicDb().setOathbreakerPredicate(getFormats().get("Oathbreaker").getFilterRules());
-        getMagicDb().setBrawlPredicate(getFormats().get("Brawl").getFilterRules());
+        getMagicDb().setUseHistoricBrawlOverride(ForgeProfileProperties.isUseHistoricBrawlOverride());
+        getMagicDb().setBrawlPredicate(getEffectiveBrawlFormat().getFilterRules());
 
         getMagicDb().setFilteredHandsEnabled(getPreferences().getPrefBoolean(FPref.FILTERED_HANDS));
         try {
@@ -416,6 +419,22 @@ public final class FModel {
 
     public static GameFormat.Collection getFormats() {
         return formats.get();
+    }
+
+    public static boolean isDuelCommanderOverride() {
+        return getMagicDb().isUseDuelCommanderOverride();
+    }
+
+    public static GameFormat getEffectiveCommanderFormat() {
+        return getFormats().get(isDuelCommanderOverride() ? "Duel Commander" : "Commander");
+    }
+
+    public static boolean isHistoricBrawlOverride() {
+        return getMagicDb().isUseHistoricBrawlOverride();
+    }
+
+    public static GameFormat getEffectiveBrawlFormat() {
+        return getFormats().get(isHistoricBrawlOverride() ? "Historic Brawl" : "Brawl");
     }
 
     public static IStorage<CardBlock> getFantasyBlocks() {

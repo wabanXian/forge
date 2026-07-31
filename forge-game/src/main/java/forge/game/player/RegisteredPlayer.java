@@ -3,6 +3,7 @@ package forge.game.player;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import forge.LobbyPlayer;
+import forge.StaticData;
 import forge.deck.CardPool;
 import forge.deck.Deck;
 import forge.deck.DeckSection;
@@ -153,7 +154,9 @@ public class RegisteredPlayer {
     	}
     	if (appliedVariants.contains(GameType.Commander)) {
             start.commanders = deck.getCommanders();
-            start.setStartingLife(start.getStartingLife() + 20); // 903.7: ...each player sets his or her life total to 40
+            if (!StaticData.instance().isUseDuelCommanderOverride()) {
+                start.setStartingLife(start.getStartingLife() + 20); // 903.7: ...each player sets his or her life total to 40
+            }
 		                                                         // Modified for layering of variants to life +20
     	}
         if (appliedVariants.contains(GameType.Oathbreaker)) {

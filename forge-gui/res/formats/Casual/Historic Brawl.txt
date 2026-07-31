@@ -1,0 +1,12 @@
+# Source:
+# https://magic.wizards.com/en/banned-restricted-list
+# Latest checked: 2026-06-17
+#
+[format]
+Name:Historic Brawl
+Type:Casual
+Subtype:Arena
+Order:102
+Sets:KTK, XLN, RIX, DOM, M19, ANA, XANA, OANA, PANA, GRN, G18, RNA, WAR, M20, ELD, HA1, THB, HA2, IKO, HA3, M21, JMP, AJMP, AKR, ANB, ZNR, KLR, KHM, HA4, STX, STA, HA5, AFR, J21, MID, VOW, YMID, NEO, YNEO, SNC, YSNC, HBG, HA6, EA1, DMU, YDMU, BRO, BRR, YBRO, EA2, ONE, YONE, SIR, SIS, MOM, MUL, MAT, LTR, HA7, EA3, WOE, WOT, YWOE, LCI, YLCI, MKM, YMKM, OTJ, OTP, BIG, YOTJ, MH3, BLB, YBLB, DSK, YDSK, FDN, J25, PIO, DFT, YDFT, TDM, YTDM, PA1, FIN, FCA, EOE, EOS, YEOE, AA1, AA2, OM1, OMB, AA3, AA4, TLA, TLE, ECL, YECL, TMT, PZA, SOS, SOA, YSOS
+Banned:Agent of Treachery; Ancient Tomb; Chalice of the Void; Channel; Chrome Mox; Demonic Tutor; Drannith Magistrate; Field of the Dead; Gideon's Intervention; Lutri, the Spellchaser; Mana Drain; Meddling Mage; Natural Order; Nexus of Fate; Oko, Thief of Crowns; Phyrexian Revoker; Pithing Needle; Runed Halo; Sorcerous Spyglass; Strip Mine; Tainted Pact; Ugin, the Spirit Dragon
+Additional:Arcane Signet; Command Tower; Admiral Brass, Unsinkable; Burden of Guilt; Clavileño, First of the Blessed; Crashing Footfalls; Crumbling Vestige; Desert; Desertion; Dismember; Duskmantle, House of Shadow; Enlisted Wurm; Evolutionary Leap; Fabricate; Gamble; Ghostly Prison; Gonti, Canny Acquisitor; Goro-Goro and Satoru; Ixidor, Reality Sculptor; Katilda and Lier; Kuldotha Rebirth; Leonin Relic-Warder; Magmaw; Mass Hysteria; Metalspinner's Puzzleknot; Mistveil Plains; Molten Psyche; Monologue Tax; Mystery Key; Mystic Snake; Notion Thief; Nyx Weaver; Olivia, Opulent Outlaw; Pantlaza, Sun-Favored; Persist; Port Razer; Possibility Storm; Prismatic Ending; Prismatic Vista; Putrid Warrior; Shard of Broken Glass; Slimefoot and Squee; Smuggler's Copter; Spell Snare; Stella Lee, Wild Card; Stoneforge Mystic; Timeless Dragon; Treacherous Terrain; Victimize; Xolatoyac, the Smiling Flood; Yuma, Proud Protector

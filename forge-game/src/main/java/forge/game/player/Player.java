@@ -686,10 +686,11 @@ public class Player extends GameEntity implements Comparable<Player> {
             addPoisonCounters(poisonCounters, source.getController(), counterTable);
         }
 
-        //Oathbreaker, Tiny Leaders, and Brawl ignore commander damage rule
+        // Oathbreaker, Tiny Leaders, Brawl, and Duel Commander override ignore commander damage rule.
         if (source.isCommander() && isCombat
                 && !this.getGame().getRules().hasAppliedVariant(GameType.Oathbreaker)
                 && !this.getGame().getRules().hasAppliedVariant(GameType.TinyLeaders)
+                && !StaticData.instance().isUseDuelCommanderOverride()
                 && !this.getGame().getRules().hasAppliedVariant(GameType.Brawl)) {
             // In case that commander is merged permanent, get the real commander card
             final Card realCommander = source.getRealCommander();

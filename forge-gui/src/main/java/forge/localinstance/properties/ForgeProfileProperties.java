@@ -43,6 +43,8 @@ public class ForgeProfileProperties {
     private static Map<String, String> cardPicsSubDirs;
     private static String decksDir;
     private static String decksConstructedDir;
+    private static boolean useHistoricBrawlOverride;
+    private static boolean useDuelCommanderOverride;
 
     private static final String USER_DIR_KEY      = "userDir";
     private static final String CACHE_DIR_KEY     = "cacheDir";
@@ -50,6 +52,8 @@ public class ForgeProfileProperties {
     private static final String CARD_PICS_SUB_DIRS_KEY = "cardPicsSubDirs";
     private static final String DECKS_DIR_KEY      = "decksDir";
     private static final String DECKS_CONSTRUCTED_DIR_KEY = "decksConstructedDir";
+    private static final String USE_HISTORIC_BRAWL_OVERRIDE_KEY = "useHistoricBrawlOverride";
+    private static final String USE_DUEL_COMMANDER_OVERRIDE_KEY = "useDuelCommanderOverride";
 
 
     private ForgeProfileProperties() {
@@ -74,6 +78,8 @@ public class ForgeProfileProperties {
         cardPicsSubDirs = getMap(props, CARD_PICS_SUB_DIRS_KEY);
         decksDir    = getDir(props, DECKS_DIR_KEY, userDir + "decks" + File.separator);
         decksConstructedDir = getDir(props, DECKS_CONSTRUCTED_DIR_KEY, decksDir + "constructed" + File.separator);
+        useHistoricBrawlOverride = Boolean.parseBoolean(props.getProperty(USE_HISTORIC_BRAWL_OVERRIDE_KEY, "false").trim());
+        useDuelCommanderOverride = Boolean.parseBoolean(props.getProperty(USE_DUEL_COMMANDER_OVERRIDE_KEY, "false").trim());
 
         FileUtil.ensureDirectoryExists(userDir);
         FileUtil.ensureDirectoryExists(cacheDir);
@@ -122,6 +128,14 @@ public class ForgeProfileProperties {
     public static void setDecksConstructedDir(final String decksConstructedDir0) {
         decksConstructedDir = decksConstructedDir0;
         save();
+    }
+
+    public static boolean isUseHistoricBrawlOverride() {
+        return useHistoricBrawlOverride;
+    }
+
+    public static boolean isUseDuelCommanderOverride() {
+        return useDuelCommanderOverride;
     }
 
     private static Map<String, String> getMap(final Properties props, final String propertyKey) {
@@ -234,6 +248,12 @@ public class ForgeProfileProperties {
                 sb.append(entry.getKey()).append("->").append(entry.getValue());
             }
             sb.append("\n");
+        }
+        if (useHistoricBrawlOverride) {
+            sb.append(USE_HISTORIC_BRAWL_OVERRIDE_KEY).append("=true\n");
+        }
+        if (useDuelCommanderOverride) {
+            sb.append(USE_DUEL_COMMANDER_OVERRIDE_KEY).append("=true\n");
         }
         if (sb.length() > 0) {
             FileUtil.writeFile(ForgeConstants.PROFILE_FILE, sb.toString());

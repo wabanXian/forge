@@ -1,0 +1,61 @@
+# Source:
+# https://www.duelcommander.org/banlist/
+# Latest checked: 2026-06-17
+# Banlist page last updated: January 26, 2026
+#
+# TODO / Known limitations of this local low-intrusion override:
+# 1. Banned as Companion is not represented.
+#    Forge GameFormat currently has no BannedAsCompanion field.
+#    Cards in this category must not be put in Banned:, because that would incorrectly ban them from main deck / commander use.
+#    Current official Banned as Companion:
+#    - Lutri, the Spellchaser
+#
+# 2. Banned as Commander only is not represented.
+#    Forge GameFormat currently has no BannedAsCommander field.
+#    Cards in this category must not be put in Banned:, because they may still be included in the 99.
+#    Current official Banned as Commander only:
+#    - Akiri, Line-Slinger
+#    - Aragorn, King of Gondor
+#    - Ardenn, Intrepid Archaeologist
+#    - Baral, Chief of Compliance
+#    - Breya, Etherium Shaper
+#    - Cecily, Haunted Mage
+#    - Derevi, Empyrial Tactician
+#    - Dihada, Binder of Wills
+#    - Djeru and Hazoret
+#    - Edgar Markov
+#    - Erayo, Soratami Ascendant
+#    - Esior, Wardwing Familiar
+#    - Geist of Saint Traft
+#    - Gut, True Soul Zealot
+#    - Inalla, Archmage Ritualist
+#    - Jeska, Thrice Reborn
+#    - Keleth, Sunmane Familiar
+#    - Kraum, Ludevic's Opus
+#    - Leovold, Emissary of Trest
+#    - Ludevic, Necro-Alchemist
+#    - Najeela, the Blade-Blossom
+#    - Oloro, Ageless Ascetic
+#    - Omnath, Locus of Creation
+#    - Raffine, Scheming Seer
+#    - Saskia the Unyielding
+#    - Skrelv, Defector Mite
+#    - Vial Smasher the Fierce
+#
+# 3. Between-game commander swap is not implemented.
+#    Duel Commander allows changing commanders between games from another legal commander in the deck.
+#    Forge currently stores commanders in DeckSection.Commander / RegisteredPlayer.commanders and Commander canSideboard=false.
+#    This local override does not implement between-game commander designation swap.
+#    Workaround: exit match, manually change commander, restart match.
+#
+# Additional note:
+# CommanderDeckGenerator.getCommanderDecks(...) has an existing non-Brawl commander candidate filtering gap:
+# it does not call format.isLegalCardPredicate() before format.isLegalCommanderPredicate().
+# This is an existing Forge issue, not introduced by this override, and is intentionally not fixed here to reduce upstream conflicts.
+
+[format]
+Name:Duel Commander
+Type:Casual
+Subtype:Commander
+Order:138
+Banned:Ancestral Recall; Ancient Tomb; Back to Basics; Balance; Bazaar of Baghdad; Black Lotus; Blood Moon; Capture of Jingzhou; Cavern of Souls; Channel; Chrome Mox; Comet, Stellar Pup; Dark Ritual; Deadly Rollick; Deflecting Swat; Dig Through Time; Emrakul, the Aeons Torn; Entomb; Fastbond; Field of the Dead; Fierce Guardianship; Flawless Maneuver; Food Chain; Force of Will; Gaea's Cradle; Genesis Storm; Gifts Ungiven; Grim Monolith; Hermit Druid; Humility; Imperial Seal; Invert Polarity; Jeweled Lotus; Karakas; Library of Alexandria; Lion's Eye Diamond; Lotus Petal; Maddening Hex; Mana Crypt; Mana Drain; Mana Vault; Mishra's Workshop; Mox Amber; Mox Diamond; Mox Emerald; Mox Jet; Mox Opal; Mox Pearl; Mox Ruby; Mox Sapphire; Mystical Tutor; Nadu, Winged Wisdom; Natural Order; Oath of Druids; Price of Progress; Protean Hulk; Ragavan, Nimble Pilferer; Rain of Filth; Reanimate; Scapeshift; Sensei's Divining Top; Serra's Sanctum; Sol Ring; Strip Mine; Temporal Manipulation; Thassa's Oracle; The One Ring; The Tabernacle at Pendrell Vale; Time Vault; Time Walk; Time Warp; Timetwister; Tinker; Tolarian Academy; Treasure Cruise; Underworld Breach; Uro, Titan of Nature's Wrath; Vampiric Tutor; Wasteland; White Plume Adventurer

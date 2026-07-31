@@ -75,7 +75,13 @@ public enum DeckFormat {
     Pauper      ( Range.is(60),                         Range.of(0, 10), 1),
     Brawl      ( Range.is(59), Range.of(0, 15), 1, null,
             card -> StaticData.instance().getBrawlPredicate().test(card)
-    ),
+    ) {
+        @Override
+        public Range<Integer> getMainRange() {
+            StaticData data = StaticData.instance();
+            return data != null && data.isUseHistoricBrawlOverride() ? Range.is(99) : super.getMainRange();
+        }
+    },
     TinyLeaders    ( Range.is(49),                         Range.of(0, 10), 1, new Predicate<>() {
         private final Set<String> bannedCards = ImmutableSet.of(
                 "Ancestral Recall", "Balance", "Black Lotus", "Black Vise", "Channel", "Chaos Orb", "Contract From Below", "Counterbalance", "Darkpact", "Demonic Attorney", "Demonic Tutor", "Earthcraft", "Edric, Spymaster of Trest", "Falling Star",
@@ -292,6 +298,13 @@ public enum DeckFormat {
 
                 if (commanders.isEmpty()) {
                     return Localizer.getInstance().getMessage("lblPlayerDoesntHaveCommander");
+                }
+
+                if (equals(DeckFormat.Brawl)) {
+                    StaticData data = StaticData.instance();
+                    if (data != null && data.isUseHistoricBrawlOverride() && commanders.size() > 1) {
+                        return "has too many commanders";
+                    }
                 }
 
                 if (commanders.size() > 2) {

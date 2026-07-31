@@ -81,7 +81,7 @@ public final class CEditorCommander extends CDeckEditor<Deck> {
 
         CardDb commonCards = FModel.getMagicDb().getCommonCards();
         if (gameType == GameType.Brawl){
-            GameFormat format = FModel.getFormats().get("Brawl");
+            GameFormat format = FModel.getEffectiveBrawlFormat();
             Predicate<CardRules> commanderFilter = CardRulesPredicates.CAN_BE_BRAWL_COMMANDER;
             commanderPool = ItemPool.createFrom(commonCards.getAllCards(format.getFilterPrinted().and(PaperCardPredicates.fromRules(commanderFilter))), PaperCard.class);
             normalPool = ItemPool.createFrom(format.getAllCards(), PaperCard.class);

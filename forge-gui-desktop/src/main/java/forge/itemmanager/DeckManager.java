@@ -319,7 +319,7 @@ public final class DeckManager extends ItemManager<DeckProxy> implements IHasGam
     protected List<String> getFilteredSetCodesInCatalog(){
         GameType gameType = getGameType();
         if (gameType == GameType.Brawl) {
-            filteredSetCodesInCatalog = FModel.getFormats().get("Brawl").getAllowedSetCodes();
+            filteredSetCodesInCatalog = FModel.getEffectiveBrawlFormat().getAllowedSetCodes();
             return filteredSetCodesInCatalog;
         }
         return super.getFilteredSetCodesInCatalog();

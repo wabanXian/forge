@@ -31,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -512,6 +513,8 @@ public class DeckRecognizer {
     // These parameters are controlled only via setter methods
     private Date releaseDateConstraint = null;
     private List<String> allowedSetCodes = null;
+    private Predicate<PaperCard> notAllowedCardFallbackPredicate = null;
+    private final Set<String> notAllowedCardFallbackNames = new LinkedHashSet<>();
     private List<String> gameFormatBannedCards = null;
     private List<String> gameFormatRestrictedCards = null;
     private List<DeckSection> allowedDeckSections = null;
@@ -737,9 +740,15 @@ public class DeckRecognizer {
                                        final boolean cardRequestHasSetCode) {
         // Note: Always Check Allowed Set First to avoid accidentally importing invalid cards
         // e.g. Banned Cards from not-allowed sets!
-        if (IsIllegalInFormat(edition.getCode()))
+        if (isIllegalInFormat(edition.getCode())) {
+            DeckSection tokenSection = getTokenSection(deckSecFromCardLine, referenceSection, pc);
+            if (canUseNotAllowedCardFallback(pc)) {
+                this.notAllowedCardFallbackNames.add(pc.getName());
+                return Token.LegalCard(pc, cardCount, tokenSection, cardRequestHasSetCode);
+            }
             // Mark as illegal card
             return Token.NotAllowedCard(pc, cardCount, cardRequestHasSetCode);
+        }
 
         if (isNotCompliantWithReleaseDateRestrictions(edition))
             return Token.CardInInvalidSet(pc, cardCount, cardRequestHasSetCode);
@@ -813,8 +822,18 @@ public class DeckRecognizer {
                 (this.gameFormatRestrictedCards.contains(pc.getName()) && cardCount > 1));
     }
 
-    private boolean IsIllegalInFormat(String setCode) {
+    private boolean isIllegalInFormat(String setCode) {
         return this.allowedSetCodes != null && !this.allowedSetCodes.contains(setCode);
+    }
+
+    private boolean canUseNotAllowedCardFallback(PaperCard pc) {
+        return this.notAllowedCardFallbackPredicate != null &&
+                !isBannedByGameFormatName(pc) &&
+                this.notAllowedCardFallbackPredicate.test(pc);
+    }
+
+    private boolean isBannedByGameFormatName(PaperCard pc) {
+        return this.gameFormatBannedCards != null && this.gameFormatBannedCards.contains(pc.getName());
     }
 
     private boolean isNotCompliantWithReleaseDateRestrictions(CardEdition edition){
@@ -1055,6 +1074,14 @@ public class DeckRecognizer {
         else
             this.gameFormatRestrictedCards = null;
 
+    }
+
+    public void setNotAllowedCardFallback(Predicate<PaperCard> fallbackPredicate) {
+        this.notAllowedCardFallbackPredicate = fallbackPredicate;
+    }
+
+    public List<String> getNotAllowedCardFallbackNames() {
+        return new ArrayList<>(this.notAllowedCardFallbackNames);
     }
 
     public void setDeckFormatConstraint(DeckFormat deckFormat0){

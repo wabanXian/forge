@@ -659,19 +659,30 @@ public class DeckgenUtil {
         PaperCard selectedPartner = null;
         List<PaperCard> preSelectedCards = new ArrayList<>();
         if(isCardGen){
-            if(format.equals(DeckFormat.Brawl)){//TODO: replace with actual Brawl based data
+            if(format.equals(DeckFormat.Brawl)){
                 Set<String> uniqueCards = new HashSet<>();
-                List<List<Pair<String, Double>>> cardArchetypes = CardArchetypeLDAGenerator.ldaPools.get(FModel.getFormats().getStandard().getName()).get(commander.getName());
-                for(List<Pair<String, Double>> archetype:cardArchetypes){
-                    for(Pair<String, Double> cardPair:archetype){
-                        String cardName = cardPair.getLeft();
-                        uniqueCards.add(cardName);
+                GameFormat brawlFormat = FModel.getEffectiveBrawlFormat();
+                Map<String, List<List<Pair<String, Double>>>> ldaPool = CardArchetypeLDAGenerator.ldaPools.get(brawlFormat.getName());
+                List<List<Pair<String, Double>>> cardArchetypes = ldaPool == null ? null : ldaPool.get(commander.getName());
+                if (cardArchetypes != null) {
+                    for(List<Pair<String, Double>> archetype:cardArchetypes){
+                        for(Pair<String, Double> cardPair:archetype){
+                            String cardName = cardPair.getLeft();
+                            uniqueCards.add(cardName);
+                        }
                     }
                 }
                 for(String card:uniqueCards){
                     PaperCard paperCard = StaticData.instance().getCommonCards().getUniqueByName(card);
-                    if(format.isLegalCard(paperCard)) {
+                    if(paperCard != null && format.isLegalCard(paperCard)) {
                         preSelectedCards.add(paperCard);
+                    }
+                }
+                if (preSelectedCards.isEmpty()) {
+                    for (PaperCard paperCard : brawlFormat.getAllCards()) {
+                        if (format.isLegalCard(paperCard)) {
+                            preSelectedCards.add(paperCard);
+                        }
                     }
                 }
             } else {
@@ -690,7 +701,7 @@ public class DeckgenUtil {
                 //pass signature spell as partner for simplicity
                 selectedPartner = getRandomSignatureSpell(preSelectedCards);
             }
-            else if (commander.getRules().canBePartnerCommander()) {
+            else if (!format.equals(DeckFormat.Brawl) && commander.getRules().canBePartnerCommander()) {
                 selectedPartner = getRandomPartnerCommander(preSelectedCards, commander);
             }
             if (selectedPartner != null) {
@@ -727,7 +738,7 @@ public class DeckgenUtil {
                                     .or(DeckGeneratorBase.COLORLESS_CARDS))));
             if (format == DeckFormat.Brawl) {
                 // add additional filterprinted rule to remove old reprints for a consistent look
-                colorList = IterableUtil.filter(colorList,FModel.getFormats().getStandard().getFilterPrinted());
+                colorList = IterableUtil.filter(colorList,FModel.getEffectiveBrawlFormat().getFilterPrinted());
             }
             //shuffle first 400 random cards
             List<PaperCard> cardList = Lists.newArrayList(colorList);

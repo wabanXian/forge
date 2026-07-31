@@ -8,6 +8,7 @@ import forge.item.PaperCard;
 import forge.item.PaperCardPredicates;
 import forge.model.FModel;
 import forge.util.ItemPool;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashMap;
 import java.util.List;
@@ -50,10 +51,14 @@ public class CommanderDeckGenerator extends DeckProxy implements Comparable<Comm
         ItemPool<PaperCard> uniqueCards;
         if (isCardGen){
             uniqueCards = new ItemPool<>(PaperCard.class);
-            //TODO: update to actual Brawl model from real Brawl decks
-            Iterable<String> legendNames=CardArchetypeLDAGenerator.ldaPools.get(FModel.getFormats().getStandard().getName()).keySet();
-            for (String legendName : legendNames) {
-                uniqueCards.add(FModel.getMagicDb().getCommonCards().getUniqueByName(legendName));
+            Map<String, List<List<Pair<String, Double>>>> ldaPool = CardArchetypeLDAGenerator.ldaPools.get(FModel.getEffectiveBrawlFormat().getName());
+            if (ldaPool != null) {
+                for (String legendName : ldaPool.keySet()) {
+                    uniqueCards.add(FModel.getMagicDb().getCommonCards().getUniqueByName(legendName));
+                }
+            }
+            if (uniqueCards.isEmpty()) {
+                uniqueCards = ItemPool.createFrom(FModel.getMagicDb().getCommonCards().getUniqueCards(), PaperCard.class);
             }
         }
         else {

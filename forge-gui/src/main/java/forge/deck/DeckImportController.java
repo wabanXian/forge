@@ -25,6 +25,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class DeckImportController {
+    private static final String HISTORIC_BRAWL_FORMAT_NAME = "Historic Brawl";
+    private static final String COMMANDER_FORMAT_NAME = "Commander";
+
     public enum ImportBehavior {
         MERGE,
         CREATE_NEW,
@@ -90,7 +93,11 @@ public class DeckImportController {
         } else {
             // get the game format with the same name of current game type (if any)
             this.currentDeckFormat = gameType.getDeckFormat();
-            this.currentGameFormat = FModel.getFormats().get(gameType.name());
+            this.currentGameFormat = switch (gameType) {
+                case Commander -> FModel.getEffectiveCommanderFormat();
+                case Brawl -> FModel.getEffectiveBrawlFormat();
+                default -> FModel.getFormats().get(gameType.name());
+            };
             this.currentGameType = gameType;
         }
     }
@@ -208,6 +215,12 @@ public class DeckImportController {
             recognizer.setGameFormatConstraint(this.currentGameFormat.getAllowedSetCodes(),
                                                this.currentGameFormat.getBannedCardNames(),
                                                this.currentGameFormat.getRestrictedCards());
+            if (this.isHistoricBrawlImport()) {
+                GameFormat commanderFormat = FModel.getFormats().get(COMMANDER_FORMAT_NAME);
+                if (commanderFormat != null) {
+                    recognizer.setNotAllowedCardFallback(commanderFormat.getFilterRules());
+                }
+            }
         }
         // Deck Format Constraint
         if (this.currentDeckFormat != null)
@@ -223,6 +236,7 @@ public class DeckImportController {
         List<Token> parsedTokens = recognizer.parseCardList(lines);
         if (parsedTokens != null)
             tokens.addAll(parsedTokens);
+        addHistoricBrawlCommanderFallbackWarning(recognizer.getNotAllowedCardFallbackNames());
 
         if (this.currentGameFormatAllowsCommander()) {
             List<Pair<Integer, Token>> commanderTokens = getTokensInSection(DeckSection.Commander);
@@ -238,6 +252,18 @@ public class DeckImportController {
 
         collectAllCardsInTokens();
         return tokens;
+    }
+
+    private boolean isHistoricBrawlImport() {
+        return this.currentGameFormat != null && HISTORIC_BRAWL_FORMAT_NAME.equals(this.currentGameFormat.getName());
+    }
+
+    private void addHistoricBrawlCommanderFallbackWarning(List<String> fallbackCardNames) {
+        if (!isHistoricBrawlImport() || fallbackCardNames == null || fallbackCardNames.isEmpty()) {
+            return;
+        }
+        tokens.add(Token.WarningMessage("Historic Brawl import accepted these cards through Commander legality fallback: "
+                + String.join(", ", fallbackCardNames)));
     }
 
     private void collectAllCardsInTokens(){

@@ -995,7 +995,7 @@ public class RecordActionsMacroSystem implements IMacroSystem {
     private SpellAbility findMatchingAbility(final Card card, final ActivateAbilityAction action) {
         final List<SpellAbility> matches = Lists.newArrayList();
         for (final SpellAbility ability : card.getAllPossibleAbilities(playerControllerHuman.getPlayer(), true)) {
-            if (ActivateAbilityAction.canonicalKey(ability).equals(action.getAbilityCanonicalKey())) {
+            if (matchesAbility(ability, action)) {
                 matches.add(ability);
             }
         }
@@ -1009,6 +1009,14 @@ public class RecordActionsMacroSystem implements IMacroSystem {
             }
         }
         return null;
+    }
+
+    private boolean matchesAbility(final SpellAbility ability, final ActivateAbilityAction action) {
+        final String canonicalKey = action.getAbilityCanonicalKey();
+        if (canonicalKey != null && !canonicalKey.isEmpty()) {
+            return ActivateAbilityAction.canonicalKey(ability).equals(canonicalKey);
+        }
+        return ability.toUnsuppressedString().equals(action.getAbilityDescription());
     }
 
     private String describeAbility(final int index, final SpellAbility ability) {

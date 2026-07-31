@@ -90,8 +90,9 @@ public final class CEditorLimited<T extends DeckBase> extends CDeckEditor<T> {
     public CEditorLimited(final IStorage<T> deckMap0, final Supplier<T> newCreator, final FScreen screen0, final CDetailPicture cDetailPicture0) {
         super(screen0, cDetailPicture0, GameType.Sealed);
 
-        final CardManager catalogManager = new CardManager(cDetailPicture0, false, false, FScreen.DECK_EDITOR_DRAFT.equals(screen0));
-        final CardManager deckManager = new CardManager(cDetailPicture0, false, false, FScreen.DECK_EDITOR_DRAFT.equals(screen0));
+        final boolean showLimitedRanking = FScreen.DECK_EDITOR_DRAFT.equals(screen0) || FScreen.DECK_EDITOR_SEALED.equals(screen0);
+        final CardManager catalogManager = new CardManager(cDetailPicture0, false, false, showLimitedRanking);
+        final CardManager deckManager = new CardManager(cDetailPicture0, false, false, showLimitedRanking);
 
         catalogManager.setCaption("Sideboard");
 

@@ -28,6 +28,8 @@ import forge.gamemodes.limited.IDraftLog;
 import forge.gamemodes.limited.LimitedPlayer;
 import forge.gui.framework.DragCell;
 import forge.gui.framework.FScreen;
+import forge.gui.framework.ICDoc;
+import forge.gui.framework.IVDoc;
 import forge.item.PaperCard;
 import forge.itemmanager.CardManager;
 import forge.itemmanager.ItemManagerConfig;
@@ -293,6 +295,7 @@ public class CEditorDraftingProcess extends ACEditorBase<PaperCard, DeckGroup> i
 
         CSubmenuDraft.SINGLETON_INSTANCE.update();
         FScreen.DRAFTING_PROCESS.close();
+        resetUIChanges();
 
         //open draft pool in Draft Deck Editor right away
         Singletons.getControl().setCurrentScreen(FScreen.DECK_EDITOR_DRAFT);
@@ -336,9 +339,11 @@ public class CEditorDraftingProcess extends ACEditorBase<PaperCard, DeckGroup> i
         this.getCatalogManager().setup(ItemManagerConfig.DRAFT_PACK);
         this.getDeckManager().setup(ItemManagerConfig.DRAFT_POOL);
 
-        if (VEditorLog.SINGLETON_INSTANCE.getParentCell() == null) {
+        if (this.boosterDraft.shouldShowDraftLog() && VEditorLog.SINGLETON_INSTANCE.getParentCell() == null) {
             VCardCatalog.SINGLETON_INSTANCE.getParentCell().addDoc(VEditorLog.SINGLETON_INSTANCE);
             VEditorLog.SINGLETON_INSTANCE.showView();
+        } else if (!this.boosterDraft.shouldShowDraftLog() && VEditorLog.SINGLETON_INSTANCE.getParentCell() != null) {
+            removeTab(VEditorLog.SINGLETON_INSTANCE);
         }
 
         ccAddLabel = this.getBtnAdd().getText();
@@ -361,12 +366,12 @@ public class CEditorDraftingProcess extends ACEditorBase<PaperCard, DeckGroup> i
 
         VCurrentDeck.SINGLETON_INSTANCE.getPnlHeader().setVisible(false);
 
-        deckGenParent = removeTab(VDeckgen.SINGLETON_INSTANCE);
-        constructedDecksParent = removeTab(VAllDecks.SINGLETON_INSTANCE);
-        commanderDecksParent = removeTab(VCommanderDecks.SINGLETON_INSTANCE);
-        oathbreakerDecksParent = removeTab(VOathbreakerDecks.SINGLETON_INSTANCE);
-        brawlDecksParent = removeTab(VBrawlDecks.SINGLETON_INSTANCE);
-        tinyLeadersDecksParent = removeTab(VTinyLeadersDecks.SINGLETON_INSTANCE);
+        deckGenParent = removeTabOnce(VDeckgen.SINGLETON_INSTANCE, deckGenParent);
+        constructedDecksParent = removeTabOnce(VAllDecks.SINGLETON_INSTANCE, constructedDecksParent);
+        commanderDecksParent = removeTabOnce(VCommanderDecks.SINGLETON_INSTANCE, commanderDecksParent);
+        oathbreakerDecksParent = removeTabOnce(VOathbreakerDecks.SINGLETON_INSTANCE, oathbreakerDecksParent);
+        brawlDecksParent = removeTabOnce(VBrawlDecks.SINGLETON_INSTANCE, brawlDecksParent);
+        tinyLeadersDecksParent = removeTabOnce(VTinyLeadersDecks.SINGLETON_INSTANCE, tinyLeadersDecksParent);
 
         // set catalog table to single-selection only mode
         getCatalogManager().setAllowMultipleSelections(false);
@@ -401,32 +406,45 @@ public class CEditorDraftingProcess extends ACEditorBase<PaperCard, DeckGroup> i
         this.getBtnRemove4().setVisible(true);
 
         VCurrentDeck.SINGLETON_INSTANCE.getPnlHeader().setVisible(true);
-        VEditorLog.SINGLETON_INSTANCE.getParentCell().setVisible(true);
+
+        if (VEditorLog.SINGLETON_INSTANCE.getParentCell() != null) {
+            removeTab(VEditorLog.SINGLETON_INSTANCE);
+        }
 
         //Re-add tabs
         if (deckGenParent != null) {
             deckGenParent.addDoc(VDeckgen.SINGLETON_INSTANCE);
+            deckGenParent = null;
         }
         if (constructedDecksParent != null) {
             constructedDecksParent.addDoc(VAllDecks.SINGLETON_INSTANCE);
+            constructedDecksParent = null;
         }
         if (commanderDecksParent != null) {
             commanderDecksParent.addDoc(VCommanderDecks.SINGLETON_INSTANCE);
+            commanderDecksParent = null;
         }
         if (oathbreakerDecksParent != null) {
             oathbreakerDecksParent.addDoc(VOathbreakerDecks.SINGLETON_INSTANCE);
+            oathbreakerDecksParent = null;
         }
         if (brawlDecksParent!= null) {
             brawlDecksParent.addDoc(VBrawlDecks.SINGLETON_INSTANCE);
+            brawlDecksParent = null;
         }
         if (tinyLeadersDecksParent != null) {
             tinyLeadersDecksParent.addDoc(VTinyLeadersDecks.SINGLETON_INSTANCE);
-        }
-        if (draftLogParent != null) {
-            draftLogParent.addDoc(VEditorLog.SINGLETON_INSTANCE);
+            tinyLeadersDecksParent = null;
         }
 
         // set catalog table back to free-selection mode
         getCatalogManager().setAllowMultipleSelections(true);
+    }
+
+    private DragCell removeTabOnce(final IVDoc<? extends ICDoc> tab, final DragCell rememberedParent) {
+        if (rememberedParent != null) {
+            return rememberedParent;
+        }
+        return removeTab(tab);
     }
 }

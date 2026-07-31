@@ -263,6 +263,9 @@ public final class SLayoutIO {
     private synchronized static void save(final File f0) {
         final String fWriteTo;
         FileLocation file = Singletons.getControl().getCurrentScreen().getLayoutFile();
+        if (Singletons.getControl().getCurrentScreen() == FScreen.DRAFTING_PROCESS) {
+            return;
+        }
 
         if (f0 == null) {
             if (file == null) {
@@ -391,6 +394,7 @@ public final class SLayoutIO {
             ListMultimap<LayoutInfo, EDocID> model = null;
             boolean usedCustomPrefsFile = false;
             FileInputStream fis = null;
+            final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
 
             try {
                 if (f != null && f.exists()) {
@@ -411,6 +415,28 @@ public final class SLayoutIO {
                                     "Reset",
                                     "Keep");
                         }
+                        if (!resetLayout) {
+                            FileInputStream validationFis = null;
+                            XMLEventReader validationReader = null;
+                            try {
+                                validationFis = new FileInputStream(userSetting);
+                                validationReader = inputFactory.createXMLEventReader(validationFis);
+                                resetLayout = readLayout(validationReader).values().contains(EDocID.EDITOR_LOG);
+                            } catch (final IOException | XMLStreamException e) {
+                                // Let the regular layout load below handle invalid layout files.
+                            } finally {
+                                try {
+                                    if (validationReader != null) {
+                                        validationReader.close();
+                                    }
+                                    if (validationFis != null) {
+                                        validationFis.close();
+                                    }
+                                } catch (final IOException | XMLStreamException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
                         if (resetLayout) {
                             // delete the old layout file
                             screen.deleteLayoutFile();
@@ -426,7 +452,6 @@ public final class SLayoutIO {
                     }
                 }
 
-                final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
                 XMLEventReader xer = null;
                 try {
                     xer = inputFactory.createXMLEventReader(fis);
@@ -541,4 +566,3 @@ public final class SLayoutIO {
         writer0.add(NEWLINE);
     }
 }
- 

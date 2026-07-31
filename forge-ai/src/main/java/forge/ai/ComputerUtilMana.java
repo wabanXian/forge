@@ -66,6 +66,9 @@ public class ComputerUtilMana {
     public static boolean payManaCost(ManaCostBeingPaid cost, final SpellAbility sa, final Player ai, final boolean effect) {
         return payManaCost(cost, sa, ai, false, true, effect) != null;
     }
+    public static boolean payManaCostForHumanAutoPayment(ManaCostBeingPaid cost, final SpellAbility sa, final Player ai, final boolean effect) {
+        return payManaCost(cost, sa, ai, false, true, effect, false) != null;
+    }
     public static boolean payManaCost(final Cost cost, final Player ai, final SpellAbility sa, final boolean effect) {
         return payManaCost(cost, sa, ai, false, 0, true, effect);
     }
@@ -95,6 +98,14 @@ public class ComputerUtilMana {
 
     public static CardCollection getManaSourcesToPayCost(final ManaCostBeingPaid cost, final SpellAbility sa, final Player ai, final boolean effect) {
         final List<SpellAbility> payment = payManaCost(cost, sa, ai, true, true, effect);
+        if (payment == null) {
+            return null;
+        }
+        return new CardCollection(payment.stream().map(s -> s.getHostCard()));
+    }
+    public static CardCollection getManaSourcesToPayCostForHumanAutoPayment(final ManaCostBeingPaid cost, final SpellAbility sa,
+            final Player ai, final boolean effect) {
+        final List<SpellAbility> payment = payManaCost(cost, sa, ai, true, true, effect, false);
         if (payment == null) {
             return null;
         }
@@ -595,6 +606,12 @@ public class ComputerUtilMana {
 
     // returns null if unpayable
     private static List<SpellAbility> payManaCost(final ManaCostBeingPaid cost, final SpellAbility sa, final Player ai, final boolean test, boolean checkPlayable, boolean effect) {
+        return payManaCost(cost, sa, ai, test, checkPlayable, effect, true);
+    }
+
+    // returns null if unpayable
+    private static List<SpellAbility> payManaCost(final ManaCostBeingPaid cost, final SpellAbility sa, final Player ai,
+            final boolean test, boolean checkPlayable, boolean effect, final boolean applyAiManaLogic) {
         if ((sa.isOffering() && sa.getSacrificedAsOffering() == null) || (sa.isEmerge() && sa.getSacrificedAsEmerge() == null)) {
             // nothing was chosen
             return null;
@@ -701,7 +718,7 @@ public class ComputerUtilMana {
                 continue;
             }
 
-            if (saPayment != null && "BlackLotus".equals(saPayment.getParam("AILogic")) && !SpecialCardAi.BlackLotus.consider(ai, sa, cost)) {
+            if (applyAiManaLogic && saPayment != null && "BlackLotus".equals(saPayment.getParam("AILogic")) && !SpecialCardAi.BlackLotus.consider(ai, sa, cost)) {
                 // since we checked this already, do not loop indefinitely checking again
                 saExcludeList.add(saPayment);
                 continue;

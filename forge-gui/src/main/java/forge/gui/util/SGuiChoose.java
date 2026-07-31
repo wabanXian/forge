@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 
 public class SGuiChoose {
 
@@ -45,6 +46,14 @@ public class SGuiChoose {
             return null;
         }
         final List<T> choice = getChoices(message, 0, 1, choices, selected == null ? null : List.of(selected), display);
+        return choice.isEmpty() ? null : choice.get(0);
+    }
+    public static <T> T oneOrNone(final String message, final Collection<T> choices, T selected,
+            FSerializableFunction<T, String> display, final Function<T, Iterable<String>> searchKeyProvider) {
+        if ((choices == null) || choices.isEmpty()) {
+            return null;
+        }
+        final List<T> choice = getChoices(message, 0, 1, choices, selected == null ? null : List.of(selected), display, searchKeyProvider);
         return choice.isEmpty() ? null : choice.get(0);
     }
 
@@ -159,6 +168,11 @@ public class SGuiChoose {
     }
     public static <T> List<T> getChoices(final String message, final int min, final int max, final Collection<T> choices, final Collection<T> selected, final FSerializableFunction<T, String> display) {
         return GuiBase.getInterface().getChoices(message, min, max, choices, selected, display);
+    }
+    public static <T> List<T> getChoices(final String message, final int min, final int max, final Collection<T> choices,
+            final Collection<T> selected, final FSerializableFunction<T, String> display,
+            final Function<T, Iterable<String>> searchKeyProvider) {
+        return GuiBase.getInterface().getChoices(message, min, max, choices, selected, display, searchKeyProvider);
     }
 
     public static <T> List<T> many(final String title, final String topCaption, final int cnt, final List<T> sourceChoices) {

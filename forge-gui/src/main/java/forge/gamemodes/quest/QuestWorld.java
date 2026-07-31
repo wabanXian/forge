@@ -106,6 +106,27 @@ public class QuestWorld implements Comparable<QuestWorld>{
         return format;
     }
 
+    public List<String> getSearchKeys() {
+        final List<String> keys = new ArrayList<>();
+        keys.add(name);
+
+        if (format == null) {
+            return keys;
+        }
+
+        final CardEdition.Collection editions = FModel.getMagicDb().getEditions();
+        for (final String setCode : format.getAllowedSetCodes()) {
+            keys.add(setCode);
+            final CardEdition edition = editions.get(setCode);
+            if (edition != null) {
+                keys.add(edition.getCode());
+                keys.add(edition.getCode2());
+                keys.add(edition.getName());
+            }
+        }
+        return keys;
+    }
+
     public Collection<PaperCard> getAllCards() {
         GameFormat format0 = format;
         if (format0 == null) {

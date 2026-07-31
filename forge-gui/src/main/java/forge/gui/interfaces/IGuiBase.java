@@ -16,6 +16,7 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.jupnp.UpnpServiceConfiguration;
 
@@ -60,6 +61,11 @@ public interface IGuiBase {
     File getSaveFile(File defaultFile);
     <T> List<T> order(String title, String top, int remainingObjectsMin, int remainingObjectsMax, List<T> sourceChoices, List<T> destChoices);
     <T> List<T> getChoices(String message, int min, int max, Collection<T> choices, Collection<T> selected, FSerializableFunction<T, String> display);
+    default <T> List<T> getChoices(final String message, final int min, final int max, final Collection<T> choices,
+            final Collection<T> selected, final FSerializableFunction<T, String> display,
+            final Function<T, Iterable<String>> searchKeyProvider) {
+        return getChoices(message, min, max, choices, selected, display);
+    }
     PaperCard chooseCard(String title, String message, List<PaperCard> list);
 
     boolean isSupportedAudioFormat(File file);

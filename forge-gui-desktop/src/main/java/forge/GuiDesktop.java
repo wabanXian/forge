@@ -16,6 +16,7 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javax.sound.sampled.AudioSystem;
 import javax.swing.ImageIcon;
@@ -184,6 +185,13 @@ public class GuiDesktop implements IGuiBase {
             Thread.dumpStack();
         }*/
         return GuiChoose.getChoices(message, min, max, choices, selected, display);
+    }
+
+    @Override
+    public <T> List<T> getChoices(final String message, final int min, final int max, final Collection<T> choices,
+            final Collection<T> selected, final FSerializableFunction<T, String> display,
+            final Function<T, Iterable<String>> searchKeyProvider) {
+        return GuiChoose.getChoices(message, min, max, choices, selected, display, searchKeyProvider, null);
     }
 
     @Override

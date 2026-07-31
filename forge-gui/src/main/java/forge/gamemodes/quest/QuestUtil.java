@@ -200,7 +200,7 @@ public class QuestUtil {
         }
 
         final String setPrompt = localizer.getMessage("lblWhereDoYouWishToTravel");
-        final QuestWorld newWorld = SGuiChoose.oneOrNone(setPrompt, worlds);
+        final QuestWorld newWorld = SGuiChoose.oneOrNone(setPrompt, worlds, null, QuestWorld::getName, QuestWorld::getSearchKeys);
 
         if (worlds.indexOf(newWorld) < 0) {
             return;

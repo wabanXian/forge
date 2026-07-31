@@ -220,7 +220,7 @@ public class Game {
         lastStateBattlefield.clear();
         lastStateGraveyard.clear();
         Map<Integer, Card> cachedMap = Maps.newHashMap();
-        for (final Player p : getPlayers()) {
+        for (final Player p : getPlayers().toArray(new Player[0])) {
             lastStateBattlefield.addAll(p.getZone(ZoneType.Battlefield).getLKICopy(cachedMap));
             lastStateGraveyard.addAll(p.getZone(ZoneType.Graveyard).getLKICopy(cachedMap));
         }
@@ -229,7 +229,7 @@ public class Game {
     public CardCollectionView copyLastState(ZoneType type) {
         CardCollection result = new CardCollection();
         Map<Integer, Card> cachedMap = Maps.newHashMap();
-        for (final Player p : getPlayers()) {
+        for (final Player p : getPlayers().toArray(new Player[0])) {
             result.addAll(p.getZone(type).getLKICopy(cachedMap));
         }
         return result;

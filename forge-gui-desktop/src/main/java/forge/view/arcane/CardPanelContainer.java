@@ -78,13 +78,13 @@ public abstract class CardPanelContainer extends SkinnedPanel {
 
     private void mouseWheelZoom(final CardView card) {
         if (canZoom(card)) {
-            CardZoomer.SINGLETON_INSTANCE.setCard(card.getCurrentState(), false);
+            CardZoomer.SINGLETON_INSTANCE.setCard(card.getCurrentState(), getMatchUI().mayFlip(card));
             CardZoomer.SINGLETON_INSTANCE.doMouseWheelZoom();
         }
     }
     private void mouseButtonZoom(final CardView card) {
         if (canZoom(card)) {
-            CardZoomer.SINGLETON_INSTANCE.setCard(card.getCurrentState(), false);
+            CardZoomer.SINGLETON_INSTANCE.setCard(card.getCurrentState(), getMatchUI().mayFlip(card));
             CardZoomer.SINGLETON_INSTANCE.doMouseButtonZoom();
         }
     }

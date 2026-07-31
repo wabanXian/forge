@@ -20,6 +20,7 @@ package forge.gamemodes.limited;
 import java.util.ArrayList;
 import java.util.List;
 
+import forge.LobbyPlayer;
 import forge.deck.Deck;
 import forge.game.GameType;
 import forge.game.player.RegisteredPlayer;
@@ -39,21 +40,38 @@ import forge.util.Aggregates;
  * @since 1.2.xx
  */
 public class GauntletMini {
+    private static final int MAX_MATCH_WINS = 7;
+    private static final int MAX_DRAFT_MATCH_LOSSES = 3;
+    private static final int MAX_SEALED_MATCH_LOSSES = 2;
+
     private HostedMatch hostedMatch = null;
     private int rounds;
     private Deck humanDeck;
     private int currentRound;
     private int wins;
     private int losses;
+    private int matchWins;
+    private int matchLosses;
+    private boolean currentMatchRecorded;
+    private int currentOpponentIndex = -1;
+    private String currentOpponentName = "";
+    private String currentPlayerName = "";
+    private String currentMatchScore = "";
+    private boolean currentMatchWon;
     private boolean gauntletDraft; // Means: Draft game is in Gauntlet-mode, not a single match
     private GameType gauntletType;
-    private final List<RegisteredPlayer> aiOpponents = new ArrayList<>();
+    private final List<Deck> aiOpponentDecks = new ArrayList<>();
+    private final List<Integer> playedOpponentIndexes = new ArrayList<>();
+    private final List<MatchRecord> matchHistory = new ArrayList<>();
 
     public GauntletMini() {
         currentRound = 1;
         gauntletDraft = false;
         wins = 0;
         losses = 0;
+        matchWins = 0;
+        matchLosses = 0;
+        currentMatchRecorded = false;
         gauntletType = GameType.Sealed; // Assignable in launch();
     }
 
@@ -63,6 +81,16 @@ public class GauntletMini {
     public void resetCurrentRound() {
         wins = 0;
         losses = 0;
+        matchWins = 0;
+        matchLosses = 0;
+        currentMatchRecorded = false;
+        currentOpponentIndex = -1;
+        currentOpponentName = "";
+        currentPlayerName = "";
+        currentMatchScore = "";
+        currentMatchWon = false;
+        playedOpponentIndexes.clear();
+        matchHistory.clear();
         currentRound = 1;
     }
 
@@ -70,17 +98,32 @@ public class GauntletMini {
      * Advances the tournament to the next round.
      */
     public void nextRound() {
-        System.out.println("Moving from round " + currentRound + " to round " +  (currentRound + 1) + " of " + rounds);
+        System.out.println("Moving from match " + currentRound + " to match " +  (currentRound + 1) + " of " + rounds);
         if (hostedMatch == null) {
-            throw new IllegalStateException("Cannot advance round when no match has been hosted.");
+            throw new IllegalStateException("Cannot advance match when no match has been hosted.");
         }
 
-        if (currentRound >= rounds) {
-            currentRound = rounds - 1;
+        if (isRunComplete() || currentRound >= rounds) {
             return;
         }
 
+        archiveCurrentMatchResult();
         currentRound++;
+        currentMatchRecorded = false;
+        currentOpponentIndex = -1;
+        currentOpponentName = "";
+        currentPlayerName = "";
+        currentMatchScore = "";
+        currentMatchWon = false;
+        hostedMatch.endCurrentGame();
+        startRound();
+    }
+
+    public void restartRun() {
+        if (hostedMatch == null) {
+            throw new IllegalStateException("Cannot restart run when no match has been hosted.");
+        }
+        resetCurrentRound();
         hostedMatch.endCurrentGame();
         startRound();
     }
@@ -112,19 +155,12 @@ public class GauntletMini {
         else {
             throw new IllegalStateException("Cannot launch Gauntlet, game mode not implemented.");
         }
-        aiOpponents.clear();
-
-        if (rounds == 1) { //play random opponent if only playing one round
-            aiOpponents.add(new RegisteredPlayer(aiDecks.get(Aggregates.randomInt(0, aiDecks.size() - 1))));
+        aiOpponentDecks.clear();
+        aiOpponentDecks.addAll(aiDecks);
+        if (aiOpponentDecks.isEmpty()) {
+            throw new IllegalStateException("Cannot launch Gauntlet with no AI opponents.");
         }
-        else { //otherwise play opponents in order
-            if (rounds > aiDecks.size()) {
-                rounds = aiDecks.size(); //don't allow playing same opponent twice
-            }
-            for (int i = 0; i < rounds; i++) {
-                aiOpponents.add(new RegisteredPlayer(aiDecks.get(i)));
-            }
-        }
+        rounds = Math.min(MAX_MATCH_WINS, Math.min(rounds, aiOpponentDecks.size()));
 
         resetCurrentRound();
         startRound();
@@ -137,7 +173,10 @@ public class GauntletMini {
         final List<RegisteredPlayer> starter = new ArrayList<>();
         final RegisteredPlayer human = new RegisteredPlayer(humanDeck).setPlayer(GamePlayerUtil.getGuiPlayer());
         starter.add(human);
-        starter.add(aiOpponents.get(currentRound - 1).setPlayer(GamePlayerUtil.createAiPlayer()));
+        currentOpponentIndex = chooseNextOpponentIndex();
+        final LobbyPlayer aiPlayer = GamePlayerUtil.createAiPlayer();
+        currentOpponentName = aiPlayer.getName();
+        starter.add(new RegisteredPlayer(aiOpponentDecks.get(currentOpponentIndex)).setPlayer(aiPlayer));
 
         for (final RegisteredPlayer pl : starter) {
             pl.assignConspiracies();
@@ -145,6 +184,21 @@ public class GauntletMini {
 
         hostedMatch = GuiBase.getInterface().hostMatch();
         hostedMatch.startMatch(gauntletType, null, starter, human, GuiBase.getInterface().getNewGuiGame());
+    }
+
+    private int chooseNextOpponentIndex() {
+        final List<Integer> availableIndexes = new ArrayList<>();
+        for (int i = 0; i < aiOpponentDecks.size(); i++) {
+            if (!playedOpponentIndexes.contains(i)) {
+                availableIndexes.add(i);
+            }
+        }
+        if (availableIndexes.isEmpty()) {
+            throw new IllegalStateException("Cannot advance Gauntlet; no unplayed AI opponents remain.");
+        }
+        final int selectedIndex = availableIndexes.get(Aggregates.randomInt(0, availableIndexes.size() - 1));
+        playedOpponentIndexes.add(selectedIndex);
+        return selectedIndex;
     }
 
     /**
@@ -191,6 +245,103 @@ public class GauntletMini {
      */
     public final int getLosses() {
         return losses;
+    }
+
+    public void addMatchWin() {
+        if (currentMatchRecorded) {
+            return;
+        }
+        matchWins++;
+        currentMatchRecorded = true;
+    }
+
+    public void addMatchLoss() {
+        if (currentMatchRecorded) {
+            return;
+        }
+        matchLosses++;
+        currentMatchRecorded = true;
+    }
+
+    public int getMatchWins() {
+        return matchWins;
+    }
+
+    public int getMatchLosses() {
+        return matchLosses;
+    }
+
+    public int getMaxMatchWins() {
+        return MAX_MATCH_WINS;
+    }
+
+    public int getMaxMatchLosses() {
+        return gauntletType == GameType.Draft ? MAX_DRAFT_MATCH_LOSSES : MAX_SEALED_MATCH_LOSSES;
+    }
+
+    public boolean isRunComplete() {
+        return matchWins >= getMaxMatchWins() || matchLosses >= getMaxMatchLosses() || currentRound >= rounds;
+    }
+
+    public int getMaxMatches() {
+        return rounds;
+    }
+
+    public void setCurrentMatchResult(final String playerName, final String score, final boolean won) {
+        currentPlayerName = playerName == null ? "" : playerName;
+        currentMatchScore = score == null ? "" : score;
+        currentMatchWon = won;
+    }
+
+    public MatchRecord getCurrentMatchRecord() {
+        return new MatchRecord(currentRound, currentPlayerName, currentOpponentName, currentMatchScore, currentMatchWon);
+    }
+
+    public List<MatchRecord> getMatchHistory() {
+        return matchHistory;
+    }
+
+    public void archiveCurrentMatchResult() {
+        if (!currentMatchScore.isEmpty() && matchHistory.stream().noneMatch(record -> record.getMatchNumber() == currentRound)) {
+            matchHistory.add(getCurrentMatchRecord());
+        }
+    }
+
+    public static final class MatchRecord {
+        private final int matchNumber;
+        private final String playerName;
+        private final String opponentName;
+        private final String score;
+        private final boolean won;
+
+        private MatchRecord(final int matchNumber0, final String playerName0, final String opponentName0,
+                final String score0, final boolean won0) {
+            matchNumber = matchNumber0;
+            playerName = playerName0;
+            opponentName = opponentName0;
+            score = score0;
+            won = won0;
+        }
+
+        public int getMatchNumber() {
+            return matchNumber;
+        }
+
+        public String getPlayerName() {
+            return playerName;
+        }
+
+        public String getOpponentName() {
+            return opponentName;
+        }
+
+        public String getScore() {
+            return score;
+        }
+
+        public boolean isWon() {
+            return won;
+        }
     }
 
     /**

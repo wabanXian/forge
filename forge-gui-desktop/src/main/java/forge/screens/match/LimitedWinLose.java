@@ -38,7 +38,7 @@ public class LimitedWinLose extends ControlWinLose {
     /** String constraint parameters. */
     private static final SkinColor FORE_COLOR = FSkin.getColor(Colors.CLR_TEXT);
     private static final String CONSTRAINTS_TITLE = "w 95%!, gap 0 0 20px 10px";
-    private static final String CONSTRAINTS_TEXT = "w 95%!,, h 180px!, gap 0 0 0 20px";
+    private static final String CONSTRAINTS_TEXT = "w 95%!, growy, gap 0 0 0 20px";
 
     /**
      * Instantiates a new limited mode win/lose handler.
@@ -59,7 +59,7 @@ public class LimitedWinLose extends ControlWinLose {
                 TitleLabel lblTemp1 = new TitleLabel(title);
                 SkinnedLabel lblTemp2 = new SkinnedLabel(message);
                 lblTemp2.setHorizontalAlignment(SwingConstants.CENTER);
-                lblTemp2.setFont(FSkin.getRelativeFont(17));
+                lblTemp2.setFont(FSkin.getRelativeFont(15));
                 lblTemp2.setForeground(FORE_COLOR);
                 lblTemp2.setIconTextGap(50);
                 getView().getPnlCustom().add(lblTemp1, LimitedWinLose.CONSTRAINTS_TITLE);
@@ -95,8 +95,9 @@ public class LimitedWinLose extends ControlWinLose {
      */
     @Override
     public final void actionOnRestart() {
-        controller.actionOnRestart();
-        super.actionOnRestart();
+        if (!controller.actionOnRestart()) {
+            super.actionOnRestart();
+        }
     }
 
     /**

@@ -94,7 +94,7 @@ public final class DragCell extends JPanel implements ILocalRepaint {
     public void doCellLayout(final boolean showTabs) {
         this.removeAll();
         final int borderT = SLayoutConstants.BORDER_T;
-        final int headH = ((showTabs || allDocs.size() > 1) ? SLayoutConstants.HEAD_H : 0);
+        final int headH = (showTabs ? SLayoutConstants.HEAD_H : 0);
         this.add(pnlHead,
                 "w 100% - " + borderT + "px!" + ", " + "h " + headH + "px!");
         this.add(pnlBorderRight,

@@ -985,12 +985,38 @@ public class RecordActionsMacroSystem implements IMacroSystem {
     }
 
     private boolean activateAbility(final InputPassPriority input, final ActivateAbilityAction action, final Card card) {
-        for (final SpellAbility ability : card.getAllPossibleAbilities(playerControllerHuman.getPlayer(), true)) {
-            if (ability.toUnsuppressedString().equals(action.getAbilityDescription())) {
-                return input.selectAbility(ability);
-            }
+        final SpellAbility ability = findMatchingAbility(card, action);
+        if (ability != null) {
+            return input.selectAbility(ability);
         }
         return false;
+    }
+
+    private SpellAbility findMatchingAbility(final Card card, final ActivateAbilityAction action) {
+        final List<SpellAbility> matches = Lists.newArrayList();
+        for (final SpellAbility ability : card.getAllPossibleAbilities(playerControllerHuman.getPlayer(), true)) {
+            if (ActivateAbilityAction.canonicalKey(ability).equals(action.getAbilityCanonicalKey())) {
+                matches.add(ability);
+            }
+        }
+        if (matches.size() == 1) {
+            return matches.get(0);
+        }
+        if (matches.size() > 1) {
+            debug("ambiguous ability match canonicalKey=" + action.getAbilityCanonicalKey());
+            for (int i = 0; i < matches.size(); i++) {
+                debug(describeAbility(i, matches.get(i)));
+            }
+        }
+        return null;
+    }
+
+    private String describeAbility(final int index, final SpellAbility ability) {
+        return index + ": " + ability.toUnsuppressedString()
+                + " api=" + ActivateAbilityAction.describeApi(ability)
+                + " cost=" + ActivateAbilityAction.describeCost(ability)
+                + " params=" + ActivateAbilityAction.describeParams(ability)
+                + " canonicalKey=" + ActivateAbilityAction.canonicalKey(ability);
     }
 
     private boolean selectPlayer(final PlayerView playerView) {

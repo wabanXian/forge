@@ -247,7 +247,20 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
         }
         final SpellAbilityView resultView = getGui().getAbilityToPlay(CardView.get(hostCard),
                 Lists.newArrayList(spellViewCache.keySet()), triggerEvent);
-        return resultView == null ? null : spellViewCache.get(resultView);
+        if (resultView == null) {
+            return null;
+        }
+        final SpellAbility result = spellViewCache.get(resultView);
+        if (shouldRecordDirectAbilitySelection(triggerEvent, abilities)) {
+            macros().addRememberedAction(new ActivateAbilityAction(result.getHostCard().getView(),
+                    result.toUnsuppressedString(), ActivateAbilityAction.canonicalKey(result)));
+        }
+        return result;
+    }
+
+    private boolean shouldRecordDirectAbilitySelection(final ITriggerEvent triggerEvent,
+                                                       final List<SpellAbility> abilities) {
+        return triggerEvent == null || getGui().isLibgdxPort() || abilities.size() == 1;
     }
 
     @Override
@@ -2818,8 +2831,10 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
         if (spellViewCache == null || spellViewCache.isEmpty()) {
             return;
         }
-        if (inputProxy.selectAbility(spellViewCache.get(sa))) {
-            macros().addRememberedAction(new ActivateAbilityAction(sa.getHostCard(), sa.getDescription()));
+        final SpellAbility ability = spellViewCache.get(sa);
+        if (inputProxy.selectAbility(ability)) {
+            macros().addRememberedAction(new ActivateAbilityAction(sa.getHostCard(), ability.toUnsuppressedString(),
+                    ActivateAbilityAction.canonicalKey(ability)));
         }
     }
 

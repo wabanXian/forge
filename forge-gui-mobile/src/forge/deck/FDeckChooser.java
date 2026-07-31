@@ -140,9 +140,12 @@ public class FDeckChooser extends FScreen {
         btnEditDeck.setCommand(event -> editSelectedDeck());
         btnViewDeck.setCommand(event -> {
             if (selectedDeckType != DeckType.STANDARD_COLOR_DECK && selectedDeckType != DeckType.STANDARD_CARDGEN_DECK
-                    && selectedDeckType != DeckType.PIONEER_CARDGEN_DECK && selectedDeckType != DeckType.HISTORIC_CARDGEN_DECK
+                    && selectedDeckType != DeckType.PIONEER_COLOR_DECK && selectedDeckType != DeckType.PIONEER_CARDGEN_DECK
+                    && selectedDeckType != DeckType.HISTORIC_COLOR_DECK && selectedDeckType != DeckType.HISTORIC_CARDGEN_DECK
                     && selectedDeckType != DeckType.MODERN_CARDGEN_DECK && selectedDeckType != DeckType.LEGACY_CARDGEN_DECK
-                    && selectedDeckType != DeckType.VINTAGE_CARDGEN_DECK && selectedDeckType != DeckType.MODERN_COLOR_DECK
+                    && selectedDeckType != DeckType.LEGACY_COLOR_DECK && selectedDeckType != DeckType.VINTAGE_CARDGEN_DECK
+                    && selectedDeckType != DeckType.VINTAGE_COLOR_DECK && selectedDeckType != DeckType.MODERN_COLOR_DECK
+                    && selectedDeckType != DeckType.PREMODERN_COLOR_DECK
                     && selectedDeckType != DeckType.PAUPER_CARDGEN_DECK && selectedDeckType != DeckType.PAUPER_COLOR_DECK
                     && selectedDeckType != DeckType.COLOR_DECK && selectedDeckType != DeckType.THEME_DECK
                     && selectedDeckType != DeckType.RANDOM_COMMANDER_DECK && selectedDeckType != DeckType.RANDOM_CARDGEN_COMMANDER_DECK) {
@@ -156,7 +159,10 @@ public class FDeckChooser extends FScreen {
                 return;
             }
             if (selectedDeckType == DeckType.COLOR_DECK || selectedDeckType == DeckType.STANDARD_COLOR_DECK
-                    || selectedDeckType == DeckType.MODERN_COLOR_DECK || selectedDeckType == DeckType.PAUPER_COLOR_DECK) {
+                    || selectedDeckType == DeckType.PIONEER_COLOR_DECK || selectedDeckType == DeckType.HISTORIC_COLOR_DECK
+                    || selectedDeckType == DeckType.MODERN_COLOR_DECK || selectedDeckType == DeckType.LEGACY_COLOR_DECK
+                    || selectedDeckType == DeckType.VINTAGE_COLOR_DECK || selectedDeckType == DeckType.PREMODERN_COLOR_DECK
+                    || selectedDeckType == DeckType.PAUPER_COLOR_DECK) {
                 DeckgenUtil.randomSelectColors(lstDecks);
             }
             else if (selectedDeckType == DeckType.STANDARD_CARDGEN_DECK){
@@ -321,6 +327,8 @@ public class FDeckChooser extends FScreen {
         switch (deckType) {
             case COLOR_DECK:
             case STANDARD_COLOR_DECK:
+            case PIONEER_COLOR_DECK:
+            case HISTORIC_COLOR_DECK:
             case STANDARD_CARDGEN_DECK:
             case PAUPER_COLOR_DECK:
             case RANDOM_CARDGEN_COMMANDER_DECK:
@@ -332,6 +340,9 @@ public class FDeckChooser extends FScreen {
             case VINTAGE_CARDGEN_DECK:
             case PAUPER_CARDGEN_DECK:
             case MODERN_COLOR_DECK:
+            case LEGACY_COLOR_DECK:
+            case VINTAGE_COLOR_DECK:
+            case PREMODERN_COLOR_DECK:
             case THEME_DECK:
             case RANDOM_DECK:
                 return true;
@@ -547,7 +558,12 @@ public class FDeckChooser extends FScreen {
                 cmbDeckTypes.addItem(DeckType.QUEST_OPPONENT_DECK);
                 cmbDeckTypes.addItem(DeckType.COLOR_DECK);
                 cmbDeckTypes.addItem(DeckType.STANDARD_COLOR_DECK);
+                cmbDeckTypes.addItem(DeckType.PIONEER_COLOR_DECK);
+                cmbDeckTypes.addItem(DeckType.HISTORIC_COLOR_DECK);
                 cmbDeckTypes.addItem(DeckType.MODERN_COLOR_DECK);
+                cmbDeckTypes.addItem(DeckType.LEGACY_COLOR_DECK);
+                cmbDeckTypes.addItem(DeckType.VINTAGE_COLOR_DECK);
+                cmbDeckTypes.addItem(DeckType.PREMODERN_COLOR_DECK);
                 cmbDeckTypes.addItem(DeckType.PAUPER_COLOR_DECK);
                 cmbDeckTypes.addItem(DeckType.RANDOM_DECK);
                 cmbDeckTypes.addItem(DeckType.THEME_DECK);
@@ -948,6 +964,11 @@ public class FDeckChooser extends FScreen {
             pool = ColorDeckGenerator.getColorDecks(lstDecks, FModel.getFormats().getStandard().getFilterPrinted(), isAi);
             config = ItemManagerConfig.STRING_ONLY;
             break;
+        case PIONEER_COLOR_DECK:
+            maxSelections = 3;
+            pool = ColorDeckGenerator.getColorDecks(lstDecks, FModel.getFormats().getPioneer().getFilterPrinted(), isAi);
+            config = ItemManagerConfig.STRING_ONLY;
+            break;
         case STANDARD_CARDGEN_DECK:
             maxSelections = 1;
             pool = getCardGenDeckPool(FModel.getFormats().getStandard());
@@ -963,6 +984,11 @@ public class FDeckChooser extends FScreen {
             pool = getCardGenDeckPool(FModel.getFormats().getHistoric());
             config = ItemManagerConfig.STRING_ONLY;
             break;
+        case HISTORIC_COLOR_DECK:
+            maxSelections = 3;
+            pool = ColorDeckGenerator.getColorDecks(lstDecks, FModel.getFormats().getHistoric().getFilterPrinted(), isAi);
+            config = ItemManagerConfig.STRING_ONLY;
+            break;
         case MODERN_CARDGEN_DECK:
             maxSelections = 1;
             pool = getCardGenDeckPool(FModel.getFormats().getModern());
@@ -973,9 +999,19 @@ public class FDeckChooser extends FScreen {
             pool = getCardGenDeckPool(FModel.getFormats().get("Legacy"));
             config = ItemManagerConfig.STRING_ONLY;
             break;
+        case LEGACY_COLOR_DECK:
+            maxSelections = 3;
+            pool = ColorDeckGenerator.getColorDecks(lstDecks, FModel.getFormats().getLegacy().getFilterPrinted(), isAi);
+            config = ItemManagerConfig.STRING_ONLY;
+            break;
         case VINTAGE_CARDGEN_DECK:
             maxSelections = 1;
             pool = getCardGenDeckPool(FModel.getFormats().get("Vintage"));
+            config = ItemManagerConfig.STRING_ONLY;
+            break;
+        case VINTAGE_COLOR_DECK:
+            maxSelections = 3;
+            pool = ColorDeckGenerator.getColorDecks(lstDecks, FModel.getFormats().getVintage().getFilterPrinted(), isAi);
             config = ItemManagerConfig.STRING_ONLY;
             break;
         case PAUPER_CARDGEN_DECK:
@@ -986,6 +1022,11 @@ public class FDeckChooser extends FScreen {
         case MODERN_COLOR_DECK:
             maxSelections = 3;
             pool = ColorDeckGenerator.getColorDecks(lstDecks, FModel.getFormats().getModern().getFilterPrinted(), isAi);
+            config = ItemManagerConfig.STRING_ONLY;
+            break;
+        case PREMODERN_COLOR_DECK:
+            maxSelections = 3;
+            pool = ColorDeckGenerator.getColorDecks(lstDecks, FModel.getFormats().getPremodern().getFilterPrinted(), isAi);
             config = ItemManagerConfig.STRING_ONLY;
             break;
         case PAUPER_COLOR_DECK:
@@ -1427,8 +1468,13 @@ public class FDeckChooser extends FScreen {
                     DeckType.QUEST_OPPONENT_DECK,
                     DeckType.COLOR_DECK,
                     DeckType.STANDARD_COLOR_DECK,
+                    DeckType.PIONEER_COLOR_DECK,
+                    DeckType.HISTORIC_COLOR_DECK,
                     DeckType.STANDARD_CARDGEN_DECK,
                     DeckType.MODERN_COLOR_DECK,
+                    DeckType.LEGACY_COLOR_DECK,
+                    DeckType.VINTAGE_COLOR_DECK,
+                    DeckType.PREMODERN_COLOR_DECK,
                     DeckType.PAUPER_COLOR_DECK,
                     DeckType.PIONEER_CARDGEN_DECK,
                     DeckType.HISTORIC_CARDGEN_DECK,

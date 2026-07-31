@@ -682,8 +682,23 @@ public class FDeckChooser extends JPanel implements IDecksComboBoxListener {
             case STANDARD_COLOR_DECK:
                 updateColors(FModel.getFormats().getStandard().getFilterPrinted());
                 break;
+            case PIONEER_COLOR_DECK:
+                updateColors(FModel.getFormats().getPioneer().getFilterPrinted());
+                break;
+            case HISTORIC_COLOR_DECK:
+                updateColors(FModel.getFormats().getHistoric().getFilterPrinted());
+                break;
             case MODERN_COLOR_DECK:
                 updateColors(FModel.getFormats().getModern().getFilterPrinted());
+                break;
+            case LEGACY_COLOR_DECK:
+                updateColors(FModel.getFormats().getLegacy().getFilterPrinted());
+                break;
+            case VINTAGE_COLOR_DECK:
+                updateColors(FModel.getFormats().getVintage().getFilterPrinted());
+                break;
+            case PREMODERN_COLOR_DECK:
+                updateColors(FModel.getFormats().getPremodern().getFilterPrinted());
                 break;
             case PAUPER_COLOR_DECK:
                 updateColors(FModel.getFormats().getPauper().getFilterPrinted());

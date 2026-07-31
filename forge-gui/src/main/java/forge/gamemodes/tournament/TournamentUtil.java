@@ -33,6 +33,12 @@ public class TournamentUtil {
                 case STANDARD_COLOR_DECK:
                     deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getStandard().getFilterPrinted(),true);
                     break;
+                case PIONEER_COLOR_DECK:
+                    deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getPioneer().getFilterPrinted(),true);
+                    break;
+                case HISTORIC_COLOR_DECK:
+                    deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getHistoric().getFilterPrinted(),true);
+                    break;
                 case STANDARD_CARDGEN_DECK:
                     deck = DeckgenUtil.buildCardGenDeck(FModel.getFormats().getStandard(),true);
                     break;
@@ -56,6 +62,18 @@ public class TournamentUtil {
                     break;    
                 case MODERN_COLOR_DECK:
                     deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getModern().getFilterPrinted(),true);
+                    break;
+                case LEGACY_COLOR_DECK:
+                    deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getLegacy().getFilterPrinted(),true);
+                    break;
+                case VINTAGE_COLOR_DECK:
+                    deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getVintage().getFilterPrinted(),true);
+                    break;
+                case PREMODERN_COLOR_DECK:
+                    deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getPremodern().getFilterPrinted(),true);
+                    break;
+                case PAUPER_COLOR_DECK:
+                    deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getPauper().getFilterPrinted(),true);
                     break;
                 case CUSTOM_DECK:
                     deck = DeckgenUtil.getRandomCustomDeck();

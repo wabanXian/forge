@@ -98,7 +98,6 @@ public class GauntletMini {
      * Advances the tournament to the next round.
      */
     public void nextRound() {
-        System.out.println("Moving from match " + currentRound + " to match " +  (currentRound + 1) + " of " + rounds);
         if (hostedMatch == null) {
             throw new IllegalStateException("Cannot advance match when no match has been hosted.");
         }

@@ -107,7 +107,5 @@ forge-gui-ios/robovm.properties
 
 
 .cache/
-.codex/
-forge-gui-mobile-dev/local/
 tools/**/__pycache__/
 tools/**/*.py[cod]

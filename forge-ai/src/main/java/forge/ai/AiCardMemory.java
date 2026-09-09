@@ -66,7 +66,7 @@ public class AiCardMemory {
     }
 
     public enum MemorySetMana implements MemoryType<ManaCostBeingPaid> {
-        UNPAID_COSTS
+        UNPAID_COSTS // all partial costs AI couldn't pay, stored globally so individual effects don't need to run expensive checks themselves
     }
 
     public interface MemoryType<T> {
@@ -190,14 +190,14 @@ public class AiCardMemory {
      * @param set the memory set to inspect.
      * @return true, if the given memory set contains no remembered cards.
      */
-    public boolean isMemorySetEmpty(MemorySet set) {
+    public boolean isMemorySetEmpty(MemoryType set) {
         return set == null || getMemorySet(set).isEmpty();
     }
     
     /**
      * Clears the given memory set.
      */
-    public void clearMemorySet(MemorySet set) {
+    public void clearMemorySet(MemoryType set) {
         if (set != null) {
             getMemorySet(set).clear();
         }
@@ -207,7 +207,7 @@ public class AiCardMemory {
      * Clears all memory sets stored in this card memory for the given player.
      */
     public void clearAllRemembered() {
-        for (MemorySet memSet : MemorySet.values()) {
+        for (MemoryType memSet : memoryMap.get().keySet()) {
             clearMemorySet(memSet);
         }
     }

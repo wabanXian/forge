@@ -2045,6 +2045,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
     @Override
     public ICardFace chooseSingleCardFace(final SpellAbility sa, final String message, final Predicate<ICardFace> cpp,
                                           final String name) {
+        FModel.getMagicDb().ensureAllCardsLoaded();
         List<CardFaceView> choices = FModel.getMagicDb().getCommonCards().streamAllFaces()
                 .filter(cpp)
                 .map(CardFaceView::new)
@@ -3373,6 +3374,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
                 f = lastAdded;
                 quantity = 1;
             } else {
+                FModel.getMagicDb().ensureAllCardsLoaded();
                 List<CardFaceView> choices = carddb.streamAllFaces().map(CardFaceView::new).collect(Collectors.toList());
                 Collections.sort(choices);
                 List<CardFaceView> selected = getGui().getChoices(localizer.getMessage("lblNameTheCard"),
@@ -3441,7 +3443,9 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
                                 // ensure triggered abilities fire
                                 getGame().getTriggerHandler().runWaitingTriggers();
                             } else {
-                                final FCollectionView<SpellAbility> choices1 = forgeCard.getBasicSpells();
+                                // this is really needed (for rollbacks at least)
+                                getGame().getAction().moveToHand(forgeCard, null);
+                                final List<SpellAbility> choices1 = forgeCard.getAllPossibleAbilities(p, false);
                                 if (choices1.isEmpty()) {
                                     return; // when would it happen?
                                 }
@@ -3450,7 +3454,7 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
                                 if (choices1.size() == 1) {
                                     sa = choices1.iterator().next();
                                 } else {
-                                    sa = repeatLast ? lastAddedSA : getGui().oneOrNone(localizer.getMessage("lblChoose"), (FCollection<SpellAbility>) choices1);
+                                    sa = repeatLast ? lastAddedSA : getGui().oneOrNone(localizer.getMessage("lblChoose"), choices1);
                                 }
                                 if (sa == null) {
                                     return; // happens if cancelled
@@ -3458,8 +3462,6 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
 
                                 lastAddedSA = sa;
 
-                                // this is really needed (for rollbacks at least)
-                                getGame().getAction().moveToHand(forgeCard, null);
                                 // Human player is choosing targets for an ability
                                 // controlled by chosen player.
                                 sa.setActivatingPlayer(p);

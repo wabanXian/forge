@@ -127,6 +127,9 @@ public class QuestWorld implements Comparable<QuestWorld>{
         return keys;
     }
 
+    /**
+     * Only used in Planarconquest
+     */
     public Collection<PaperCard> getAllCards() {
         GameFormat format0 = format;
         if (format0 == null) {

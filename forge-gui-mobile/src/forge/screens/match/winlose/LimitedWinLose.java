@@ -64,8 +64,9 @@ public class LimitedWinLose extends ControlWinLose {
 
     @Override
     public final void actionOnRestart() {
-        controller.actionOnRestart();
-        super.actionOnRestart();
+        if (!controller.actionOnRestart()) {
+            super.actionOnRestart();
+        }
     }
 
     @Override

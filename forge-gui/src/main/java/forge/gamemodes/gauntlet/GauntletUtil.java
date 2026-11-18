@@ -12,6 +12,7 @@ import forge.deck.DeckgenUtil;
 import forge.deck.NetDeckCategory;
 import forge.game.GameType;
 import forge.model.FModel;
+import forge.util.Aggregates;
 import forge.util.MyRandom;
 
 public class GauntletUtil {
@@ -25,8 +26,6 @@ public class GauntletUtil {
         final List<String> eventNames = new ArrayList<>();
         final List<Deck> decks = new ArrayList<>();
 
-        final Object[] netDeckNames = netDecks != null ? netDecks.getItemNames().toArray() : null;
-
         for (int i = 0; i < numOpponents; i++) {
             int randType = (int)Math.floor(MyRandom.getRandom().nextDouble() * allowedDeckTypes.size());
             switch (allowedDeckTypes.get(randType)) {
@@ -36,6 +35,7 @@ public class GauntletUtil {
                 break;
             case STANDARD_COLOR_DECK:
                 deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getStandard().getFilterPrinted(),true);
+                eventNames.add("Random Standard colors deck");
                 break;
             case PIONEER_COLOR_DECK:
                 deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getPioneer().getFilterPrinted(),true);
@@ -45,27 +45,35 @@ public class GauntletUtil {
                 break;
             case STANDARD_CARDGEN_DECK:
                 deck = DeckgenUtil.buildLDACArchetypeDeck(FModel.getFormats().getStandard(),true);
+                eventNames.add(deck.getName());
                 break;
             case PIONEER_CARDGEN_DECK:
                 deck = DeckgenUtil.buildLDACArchetypeDeck(FModel.getFormats().getPioneer(),true);
+                eventNames.add(deck.getName());
                 break;
             case HISTORIC_CARDGEN_DECK:
                 deck = DeckgenUtil.buildLDACArchetypeDeck(FModel.getFormats().getHistoric(),true);
+                eventNames.add(deck.getName());
                 break;
             case MODERN_CARDGEN_DECK:
                 deck = DeckgenUtil.buildLDACArchetypeDeck(FModel.getFormats().getModern(),true);
+                eventNames.add(deck.getName());
                 break;
             case LEGACY_CARDGEN_DECK:
                 deck = DeckgenUtil.buildLDACArchetypeDeck(FModel.getFormats().get("Legacy"),true);
+                eventNames.add(deck.getName());
                 break;
             case VINTAGE_CARDGEN_DECK:
                 deck = DeckgenUtil.buildLDACArchetypeDeck(FModel.getFormats().get("Vintage"),true);
+                eventNames.add(deck.getName());
                 break;
             case PAUPER_CARDGEN_DECK:
                 deck = DeckgenUtil.buildLDACArchetypeDeck(FModel.getFormats().getPauper(),true);
+                eventNames.add(deck.getName());
                 break;
             case MODERN_COLOR_DECK:
                 deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getModern().getFilterPrinted(),true);
+                eventNames.add("Random Modern colors deck");
                 break;
             case LEGACY_COLOR_DECK:
                 deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getLegacy().getFilterPrinted(),true);
@@ -78,6 +86,7 @@ public class GauntletUtil {
                 break;
             case PAUPER_COLOR_DECK:
                 deck = DeckgenUtil.getRandomColorDeck(FModel.getFormats().getPauper().getFilterPrinted(), true);
+                eventNames.add("Random Pauper colors deck");
                 break;
             case CUSTOM_DECK:
                 deck = DeckgenUtil.getRandomCustomDeck();
@@ -98,8 +107,7 @@ public class GauntletUtil {
                 eventNames.add(deck.getName());
                 break;
             case NET_DECK:
-                int deckIndex = (int)Math.floor(MyRandom.getRandom().nextDouble() * netDeckNames.length);
-                deck = netDecks.get((String) netDeckNames[deckIndex]);
+                deck = Aggregates.random(netDecks);
                 eventNames.add(deck.getName());
                 break;
             default:
@@ -128,8 +136,6 @@ public class GauntletUtil {
         Deck deck;
         final List<String> eventNames = new ArrayList<>();
         final List<Deck> decks = new ArrayList<>();
-
-        final Object[] netDeckNames = netDecks != null ? netDecks.getItemNames().toArray() : null;
 
         for (int i = 0; i < numOpponents; i++) {
             int randType = (int)Math.floor(MyRandom.getRandom().nextDouble() * allowedDeckTypes.size());

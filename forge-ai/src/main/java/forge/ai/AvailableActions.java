@@ -107,6 +107,7 @@ public final class AvailableActions {
         if (sa.getPayCosts() == null || !sa.getPayCosts().hasManaCost()) {
             return true;
         }
+        // Human action prediction must not apply AI-only mana heuristics such as Black Lotus conservation.
         return ComputerUtilMana.canPayManaCostForHumanActionPrediction(sa, player, 0, false);
     }
 

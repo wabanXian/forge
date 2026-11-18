@@ -21,6 +21,7 @@ package forge.gui;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -33,6 +34,7 @@ import java.util.function.Function;
 
 import javax.swing.AbstractListModel;
 import javax.swing.DefaultListCellRenderer;
+import javax.swing.DefaultListSelectionModel;
 import javax.swing.ImageIcon;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -40,6 +42,7 @@ import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
@@ -53,6 +56,7 @@ import forge.card.CardType;
 import forge.card.MagicColor;
 import forge.game.card.CounterKeywordType;
 import forge.game.card.CounterType;
+import forge.gui.util.ListHeading;
 import forge.localinstance.skin.FSkinProp;
 import forge.toolbox.FList;
 import forge.toolbox.FMouseAdapter;
@@ -95,6 +99,8 @@ public class ListChooser<T> {
     private final int minChoices, maxChoices;
     private final Function<T, String> display;
     private final Function<T, Iterable<String>> searchKeyProvider;
+    private final boolean hasHeadings;
+    private static final int HEADING_INDENT = 12;
 
     // Flag: was the dialog already shown?
     private boolean called;
@@ -117,8 +123,12 @@ public class ListChooser<T> {
         this.searchKeyProvider = searchKeyProvider;
         this.allItems = list.getClass().isInstance(List.class) ? (List<T>)list : Lists.newArrayList(list);
         this.displayedItems = new ArrayList<>(this.allItems);
+        this.hasHeadings = this.allItems.stream().anyMatch(ListHeading.class::isInstance);
         this.listModel = new ChooserListModel();
         this.lstChoices = new FList<>(this.listModel);
+        if (this.hasHeadings) {
+            this.lstChoices.setSelectionModel(new HeadingSkipSelectionModel());
+        }
 
         final ImmutableList<String> options;
         if (minChoices == 0) {
@@ -137,6 +147,9 @@ public class ListChooser<T> {
         int minWidth = this.lstChoices.getAutoSizeWidth();
         if (this.lstChoices.getModel().getSize() > this.lstChoices.getVisibleRowCount()) {
             minWidth += listScroller.getVerticalScrollBar().getPreferredSize().width;
+        }
+        if (this.hasHeadings) {
+            minWidth += HEADING_INDENT;
         }
         listScroller.setMinimumSize(new Dimension(minWidth, listScroller.getMinimumSize().height));
 
@@ -207,6 +220,21 @@ public class ListChooser<T> {
 
         if (text.isEmpty()) {
             displayedItems = new ArrayList<>(allItems);
+        } else if (hasHeadings) {
+            // In list order, so each match stays under its heading
+            displayedItems = new ArrayList<>();
+            T heading = null;
+            for (final T item : allItems) {
+                if (item instanceof ListHeading) {
+                    heading = item;
+                } else if (normalize(getDisplayText(item)).contains(text)) {
+                    if (heading != null) {
+                        displayedItems.add(heading);
+                        heading = null;
+                    }
+                    displayedItems.add(item);
+                }
+            }
         } else {
             final List<T> startsWith = new ArrayList<>();
             final List<T> contains = new ArrayList<>();
@@ -427,6 +455,23 @@ public class ListChooser<T> {
         }
     }
 
+    /** Moves a selection that lands on a heading to the choice below it, or above it when moving up. */
+    private class HeadingSkipSelectionModel extends DefaultListSelectionModel {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public void setSelectionInterval(final int index0, final int index1) {
+            final int step = !isSelectionEmpty() && index1 < getLeadSelectionIndex() ? -1 : 1;
+            int index = index1;
+            while (index >= 0 && index < displayedItems.size() && displayedItems.get(index) instanceof ListHeading) {
+                index += step;
+            }
+            if (index >= 0 && index < displayedItems.size()) {
+                super.setSelectionInterval(index, index);
+            }
+        }
+    }
+
     private class SelListener implements ListSelectionListener {
         @Override
         public void valueChanged(final ListSelectionEvent e) {
@@ -454,7 +499,17 @@ public class ListChooser<T> {
          */
         @Override
         public Component getListCellRendererComponent(final JList<? extends T> list, final T value, final int index, final boolean isSelected, final boolean cellHasFocus) {
+            if (value instanceof ListHeading) {
+                final Component heading = defRenderer.getListCellRendererComponent(list, getLabel(value), index, false, false);
+                heading.setForeground(heading.getForeground().darker());
+                heading.setFont(list.getFont().deriveFont(Font.PLAIN, list.getFont().getSize2D() - 2));
+                defRenderer.setBorder(new EmptyBorder(4, 2, 0, 2));
+                return heading;
+            }
             Component result = defRenderer.getListCellRendererComponent(list, getLabel(value), index, isSelected, cellHasFocus);
+            if (hasHeadings) {
+                defRenderer.setBorder(new EmptyBorder(0, HEADING_INDENT, 0, 2));
+            }
             if (value instanceof MagicColor.Color c) {
                 defRenderer.setIcon(fromSkinProp(FSkinProp.iconFromColor(c)));
             } else if (value instanceof CardType.CoreType c) {

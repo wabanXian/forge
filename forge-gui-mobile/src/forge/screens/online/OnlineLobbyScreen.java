@@ -271,7 +271,25 @@ public class OnlineLobbyScreen extends LobbyScreen implements IOnlineLobby, IDra
             int graceSeconds = event.getDisconnectGraceSeconds();
 
             if (isDraft) {
-                String timersTitle = Forge.getLocalizer().getMessage("lblNetworkDraftTimersTitle");
+                int floor = Math.max(2, sgl.getNumberOfSlots());
+                if (floor > BoosterDraft.N_PLAYERS) return;
+                int recommendedPod = draft.getPodSize();
+
+                List<Integer> podSizes = new ArrayList<>();
+                for (int n = floor; n <= BoosterDraft.N_PLAYERS; n++) {
+                    podSizes.add(n);
+                }
+                Integer chosenPod = SGuiChoose.oneOrNone(
+                        Forge.getLocalizer().getMessage("lblNetworkPodSizePrompt"), podSizes,
+                        podSizes.contains(recommendedPod) ? recommendedPod : podSizes.get(0),
+                        n -> BoosterDraft.markSetDefault(
+                                NetworkEvent.podSizeLabel(n), n == recommendedPod));
+                if (chosenPod == null) return;
+                draft.setPodSize(chosenPod);
+
+                if (!draft.choosePicks()) return;
+
+                String timersTitle = Forge.getLocalizer().getMessage("lblDraftSettingsTitle");
                 String pickStr = SOptionPane.showInputDialog(
                         Forge.getLocalizer().getMessage("lblNetworkPickTimerPrompt"),
                         timersTitle, null, String.valueOf(timerSeconds), null, true);
@@ -540,7 +558,7 @@ public class OnlineLobbyScreen extends LobbyScreen implements IOnlineLobby, IDra
     public void update(boolean fullUpdate) {
         super.update(fullUpdate);
         // The base constructor calls update() before our fields initialize; skip until ready
-        if (cmbMode == null) {
+        if (cmbMode == null || !cmbMode.isVisible()) {
             return;
         }
         if (!isHost && getLobby() != null && getLobby().getData() != null) {
@@ -693,7 +711,8 @@ public class OnlineLobbyScreen extends LobbyScreen implements IOnlineLobby, IDra
             // otherwise the centring slack leaves a gap below the conformance checkbox.
             float rowH = Utils.AVG_FINGER_HEIGHT;
             float actionRowTop = btnStart.getTop() + (btnStart.getHeight() - rowH) / 2f;
-            float bandBottom = (isHost && limited) ? actionRowTop : height;
+            // A client has no start button, so its lobby also takes the button's band
+            float bandBottom = !isHost ? btnStart.getBottom() : limited ? actionRowTop : height;
             float by = bandBottom - bottomBandH;
 
             super.doLayoutAboveBtnStart(superStartY, width, by);
@@ -748,6 +767,7 @@ public class OnlineLobbyScreen extends LobbyScreen implements IOnlineLobby, IDra
         StringBuilder sb = new StringBuilder();
         if (!text.formatText().isEmpty()) sb.append(text.formatText()).append('\n');
         if (!text.productText().isEmpty()) sb.append(text.productText()).append('\n');
+        if (!text.podText().isEmpty()) sb.append(text.podText()).append('\n');
         if (!text.timerText().isEmpty()) sb.append(text.timerText()).append('\n');
         if (!text.dateText().isEmpty()) sb.append(text.dateText()).append('\n');
         if (!text.statusText().isEmpty()) sb.append(text.statusText());
@@ -798,7 +818,8 @@ public class OnlineLobbyScreen extends LobbyScreen implements IOnlineLobby, IDra
             FThreads.invokeInBackgroundThread(() -> {
                 result[0] = NetConnectUtil.host(OnlineLobbyScreen.this, chatInterface);
                 chatInterface.addMessage(result[0]);
-                NetConnectUtil.copyHostedServerUrl();
+                FThreads.invokeInEdtLater(OnlineScreen.Lobby::update);
+                ServerAddressesDialog.show();
             });
             OnlineScreen.Lobby.update();
         });
